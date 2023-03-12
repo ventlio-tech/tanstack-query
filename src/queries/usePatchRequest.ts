@@ -11,10 +11,10 @@ import type {
 
 export const usePatchRequest = <TResponse>({
   path,
-  formData = false,
+  isFormData = false,
 }: {
   path: string;
-  formData?: boolean;
+  isFormData?: boolean;
 }) => {
   const authToken = '';
   const [resetForm, setResetForm] = useState<boolean>(false);
@@ -30,7 +30,7 @@ export const usePatchRequest = <TResponse>({
           body: postData,
           method: HttpMethod.PATCH,
           bearerToken: authToken,
-          formData,
+          isFormData,
         }).then((postResponse) => {
           if (postResponse.status) {
             setResetForm(true);

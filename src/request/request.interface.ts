@@ -2,10 +2,10 @@ import type { HttpMethod } from './request.enum';
 
 export interface IMakeRequest {
   path: string;
-  body?: BodyInit | null;
+  body?: Record<string, any> | null;
   method?: HttpMethod;
   bearerToken?: string;
-  formData?: boolean;
+  isFormData?: boolean;
 }
 
 export interface AxiosInstanceOption {

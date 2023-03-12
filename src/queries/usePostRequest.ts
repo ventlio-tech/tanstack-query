@@ -6,10 +6,10 @@ import { HttpMethod, makeRequest } from '../request';
 
 export const usePostRequest = <TResponse>({
   path,
-  formData = false,
+  isFormData = false,
 }: {
   path: string;
-  formData?: boolean;
+  isFormData?: boolean;
 }) => {
   const authToken = '';
 
@@ -25,7 +25,7 @@ export const usePostRequest = <TResponse>({
           body: postData,
           method: HttpMethod.POST,
           bearerToken: authToken,
-          formData,
+          isFormData,
         }).then((postResponse) => {
           if (postResponse.status) {
             setResetForm(true);

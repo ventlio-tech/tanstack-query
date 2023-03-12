@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../constants';
+import type { RawAxiosRequestHeaders } from 'axios';
 import { axiosInstance } from './axios-instance';
 
 import { buildFormData } from './buildFormData';
@@ -11,20 +11,17 @@ export async function makeRequest<TResponse>({
   method = HttpMethod.GET,
   path,
   bearerToken,
-  formData,
+  isFormData,
 }: IMakeRequest) {
-  // construct api full url
-  const apiFullUrl = `${API_BASE_URL}${path}`;
-
   // configure body
-  body = formData ? (buildFormData(body) as any) : body;
+  body = isFormData ? buildFormData(body as Record<string, any>) : body;
 
   // configure request header
-  const headers: Record<string, any> = {
+  const headers: RawAxiosRequestHeaders = {
     Authorization: `Bearer ${bearerToken}`,
   };
 
-  if (!formData) {
+  if (!isFormData) {
     headers['Content-Type'] = ContentType.APPLICATION_JSON;
   }
 
@@ -33,9 +30,9 @@ export async function makeRequest<TResponse>({
 
     //   send request
     const resp = await axios({
-      url: apiFullUrl,
+      url: path,
       method,
-      data: formData ? body : JSON.stringify(body),
+      data: body,
     });
 
     // get response json

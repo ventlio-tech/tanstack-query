@@ -1,3 +1,6 @@
+import type { UseQueryOptions } from '@tanstack/react-query';
+import type { IRequestError, IRequestSuccess } from '../request';
+
 export interface IPagination {
   current_page: number;
   next_page: number;
@@ -6,3 +9,10 @@ export interface IPagination {
   size: number;
   total: number;
 }
+
+export type TanstackQueryOption<TResponse> = UseQueryOptions<
+  IRequestSuccess<TResponse | undefined>,
+  IRequestError,
+  IRequestSuccess<TResponse | undefined>,
+  Array<any>
+>;
