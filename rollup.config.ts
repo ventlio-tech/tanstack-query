@@ -3,6 +3,7 @@ import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import type { RollupOptions } from 'rollup';
 import typescript from 'rollup-plugin-typescript2';
+
 const config: RollupOptions = {
   input: 'src/index.ts',
   output: [
