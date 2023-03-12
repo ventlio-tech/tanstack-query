@@ -84,22 +84,18 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   };
 
   const constructPaginationLink = (link: string, pageNumber: number) => {
-    const oldLink = link;
-    if (link.includes('?')) {
-      if (link.includes('?page=')) {
-        // replace current page number with new number
-        link = link.replace(/\?page=(\d+)/gim, `?page=${pageNumber}`);
-      } else if (link.includes('&page=')) {
-        link = link.replace(/&page=(\d+)/gim, `&page=${pageNumber}`);
-      } else {
-        link = `${link}&page=${pageNumber}`;
-      }
-    } else {
-      link = `${link}?page=${pageNumber}`;
-    }
+    const oldParams = new URLSearchParams(link);
+    const oldPage = Number(oldParams.get('page'));
 
-    // only update page when pagination is done
-    if (oldLink !== link) {
+    const [pathname, queryStrings] = link.split('?', 1);
+    const queryParams = new URLSearchParams(queryStrings ?? '');
+
+    queryParams.set('page', pageNumber as any);
+
+    link = pathname + '?' + queryParams.toString();
+
+    // only update page when pagination number changed
+    if (oldPage !== pageNumber) {
       setPage(pageNumber);
     }
     return link;
