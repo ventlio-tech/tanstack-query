@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "target": "ESNext",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedIndexedAccess": true,
+    "strictNullChecks": true,
+    "jsx": "react",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "declaration": true
+  },
+  "include": ["src/**/*", "rollup.config.ts"],
+  "exclude": ["node_modules", "dist", "rollup.config.ts"]
+}
