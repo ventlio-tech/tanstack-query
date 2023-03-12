@@ -1,6 +1,6 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
-import { startTransition, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
 import type { IPagination, TanstackQueryOption } from './queries.interface';
@@ -50,6 +50,12 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       ...options,
     }
   );
+
+  useEffect(() => {
+    if (path) {
+      updatePath(path);
+    }
+  }, [path]);
 
   const nextPage = () => {
     if (query.data?.data.pagination) {

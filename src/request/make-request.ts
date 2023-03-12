@@ -36,7 +36,7 @@ export async function makeRequest<TResponse>({
     });
 
     // get response json
-    const jsonResp: any = await resp.data();
+    const jsonResp: any = await resp.data;
 
     // get response code
     const responseCode = resp.status;
@@ -47,7 +47,7 @@ export async function makeRequest<TResponse>({
     }
 
     return successTransformer<TResponse>({
-      ...jsonResp,
+      data: jsonResp,
       statusCode: responseCode,
     });
   } catch (error: any) {
