@@ -1,4 +1,3 @@
-import type { RawAxiosRequestHeaders } from 'axios';
 import { axiosInstance } from './axios-instance';
 
 import { buildFormData } from './buildFormData';
@@ -10,23 +9,22 @@ export async function makeRequest<TResponse>({
   body,
   method = HttpMethod.GET,
   path,
-  bearerToken,
   isFormData,
+  headers = {},
+  baseURL,
+  timeout,
 }: IMakeRequest) {
   // configure body
   body = isFormData ? buildFormData(body as Record<string, any>) : body;
 
   // configure request header
-  const headers: RawAxiosRequestHeaders = {
-    Authorization: `Bearer ${bearerToken}`,
-  };
 
   if (!isFormData) {
     headers['Content-Type'] = ContentType.APPLICATION_JSON;
   }
 
   try {
-    const axios = axiosInstance(headers);
+    const axios = axiosInstance({ baseURL, headers, timeout });
 
     //   send request
     const resp = await axios({

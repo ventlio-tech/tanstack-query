@@ -1,8 +1,8 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
+import { useQueryConfig } from './useQueryConfig';
 
 export const usePostRequest = <TResponse>({
   path,
@@ -11,24 +11,22 @@ export const usePostRequest = <TResponse>({
   path: string;
   isFormData?: boolean;
 }) => {
-  const authToken = '';
-
-  const [resetForm, setResetForm] = useState<boolean>(false);
+  const { headers, baseURL, timeout } = useQueryConfig();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
     async (postData: any) =>
       new Promise<IRequestSuccess<TResponse>>((res, rej) => {
-        setResetForm(false);
         makeRequest<TResponse>({
           path: path,
           body: postData,
           method: HttpMethod.POST,
-          bearerToken: authToken,
           isFormData,
+          headers,
+          baseURL,
+          timeout,
         }).then((postResponse) => {
           if (postResponse.status) {
-            setResetForm(true);
             // scroll to top after success
             window.scrollTo({
               top: 0,
@@ -55,5 +53,5 @@ export const usePostRequest = <TResponse>({
     return mutation.mutateAsync(postData, options);
   };
 
-  return { post, ...mutation, resetForm };
+  return { post, ...mutation };
 };

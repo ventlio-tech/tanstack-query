@@ -4,6 +4,7 @@ import { startTransition, useEffect, useState } from 'react';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
 import type { IPagination, TanstackQueryOption } from './queries.interface';
+import { useQueryConfig } from './useQueryConfig';
 
 export const useGetRequest = <TResponse extends Record<string, any>>({
   path,
@@ -15,9 +16,10 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   queryOptions?: TanstackQueryOption<TResponse>;
 }) => {
   const [requestPath, updatePath] = useState<string>(path);
-  const authToken = '';
   const [options, setOptions] = useState<any>(queryOptions);
   const [page, setPage] = useState<number>(1);
+
+  const { headers, baseURL, timeout } = useQueryConfig();
 
   const sendRequest = async (
     res: (
@@ -30,7 +32,9 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   ) => {
     const postResponse = await makeRequest<TResponse>({
       path: requestPath,
-      bearerToken: authToken,
+      headers,
+      baseURL,
+      timeout,
     });
     if (postResponse.status) {
       res(postResponse as IRequestSuccess<TResponse>);

@@ -1,11 +1,14 @@
+import type { RawAxiosRequestHeaders } from 'axios';
 import type { HttpMethod } from './request.enum';
 
 export interface IMakeRequest {
+  baseURL: string;
+  timeout?: number;
   path: string;
   body?: Record<string, any> | null;
   method?: HttpMethod;
-  bearerToken?: string;
   isFormData?: boolean;
+  headers: RawAxiosRequestHeaders;
 }
 
 export interface AxiosInstanceOption {

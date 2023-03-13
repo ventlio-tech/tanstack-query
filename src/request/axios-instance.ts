@@ -1,13 +1,15 @@
-import type { AxiosInstance, RawAxiosRequestHeaders } from 'axios';
+import type { AxiosInstance } from 'axios';
 import axios from 'axios';
-import { API_BASE_URL } from '../constants';
+import type { IMakeRequest } from './request.interface';
 
-export const axiosInstance = (
-  headers: RawAxiosRequestHeaders
-): AxiosInstance => {
+export const axiosInstance = ({
+  baseURL,
+  timeout,
+  headers,
+}: Partial<IMakeRequest>): AxiosInstance => {
   return axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 100000,
+    baseURL,
+    timeout,
     headers,
   });
 };

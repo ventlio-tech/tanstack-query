@@ -1,6 +1,5 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
 import { scrollToTop } from '../helpers';
 import { HttpMethod, makeRequest } from '../request';
 
@@ -8,32 +7,29 @@ import type {
   IRequestError,
   IRequestSuccess,
 } from '../request/request.interface';
+import { useQueryConfig } from './useQueryConfig';
 
 export const usePatchRequest = <TResponse>({
   path,
-  isFormData = false,
 }: {
   path: string;
   isFormData?: boolean;
 }) => {
-  const authToken = '';
-  const [resetForm, setResetForm] = useState<boolean>(false);
+  const { headers, baseURL, timeout } = useQueryConfig();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
     (postData: any) =>
       new Promise<IRequestSuccess<TResponse>>((res, rej) => {
-        setResetForm(false);
-
         makeRequest<TResponse>({
           path: path,
           body: postData,
           method: HttpMethod.PATCH,
-          bearerToken: authToken,
-          isFormData,
+          headers,
+          baseURL,
+          timeout,
         }).then((postResponse) => {
           if (postResponse.status) {
-            setResetForm(true);
             // scroll to top after success
             scrollToTop();
             res(postResponse as IRequestSuccess<TResponse>);
@@ -48,6 +44,7 @@ export const usePatchRequest = <TResponse>({
         });
       })
   );
+
   const patch = async (
     postData: any,
     options?:
@@ -57,5 +54,5 @@ export const usePatchRequest = <TResponse>({
     return mutation.mutateAsync(postData, options);
   };
 
-  return { patch, ...mutation, resetForm };
+  return { patch, ...mutation };
 };

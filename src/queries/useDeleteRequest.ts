@@ -1,13 +1,16 @@
-import type { MutateOptions, QueryObserverResult } from '@tanstack/react-query';
+import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
+import { useQueryConfig } from './useQueryConfig';
 
 export const useDeleteRequest = <TResponse>() => {
   const [requestPath, updateDeletePath] = useState<string>('');
   const [options, setOptions] = useState<any>();
-  const authToken = '';
+
+  const { headers, baseURL, timeout } = useQueryConfig();
+
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
     () =>
@@ -15,8 +18,10 @@ export const useDeleteRequest = <TResponse>() => {
         setTimeout(async () => {
           const postResponse = await makeRequest<TResponse>({
             path: requestPath,
-            bearerToken: authToken,
+            headers,
             method: HttpMethod.DELETE,
+            baseURL,
+            timeout,
           });
           if (postResponse.status) {
             res(postResponse as IRequestSuccess<TResponse>);
@@ -35,18 +40,29 @@ export const useDeleteRequest = <TResponse>() => {
   const setOptionsAsync = async (fetchOptions: any) => {
     return setOptions(fetchOptions);
   };
-  const deleteR = async (
-    link: string,
-    fetchOptions?:
-      | MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown>
-      | undefined
-  ): Promise<QueryObserverResult<IRequestSuccess<TResponse>, any>> => {
-    await updatedPathAsync(link);
-    await setOptionsAsync(fetchOptions);
 
-    return query.refetch<TResponse>({
-      queryKey: [link, {}],
-    });
+  const destroy = async (
+    link: string,
+    deleteOptions?: UseQueryOptions<
+      IRequestSuccess<TResponse | undefined>,
+      IRequestError,
+      IRequestSuccess<TResponse | undefined>,
+      Array<any>
+    >
+  ): Promise<IRequestSuccess<TResponse> | undefined> => {
+    // set enabled to be true for every delete
+    deleteOptions = deleteOptions ?? {};
+    deleteOptions.enabled = true;
+
+    await updatedPathAsync(link);
+    await setOptionsAsync(deleteOptions);
+
+    // return query.refetch<TResponse>({
+    //   queryKey: [link, {}],
+    // });
+
+    return query.data;
   };
-  return { updateDeletePath, deleteR, ...query };
+
+  return { destroy, ...query };
 };
