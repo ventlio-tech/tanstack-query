@@ -9,12 +9,7 @@ import type {
   IRequestSuccess,
 } from '../request/request.interface';
 
-export const usePatchRequest = <TResponse>({
-  path,
-}: {
-  path: string;
-  isFormData?: boolean;
-}) => {
+export const usePatchRequest = <TResponse>({ path }: { path: string }) => {
   const { headers, baseURL, timeout } = useQueryConfig();
 
   // register post mutation
