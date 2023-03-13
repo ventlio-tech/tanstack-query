@@ -6,7 +6,7 @@ We have been working on a project using ReactJS and React-Native and we were hap
 
 However, we still faced some challenges. For each project, we have to configure how Tanstack-Query would connect to the Backend API and manage GET, POST, PUT, and PATCH requests efficiently. One of the major challenges was handling dynamic queryKeys in Tanstack-Query. For example, when building a screen with pagination, useQuery will have re-call the queryFunction every time the key changed, which will load the current page data. This meant that the queryKey changed dynamically, and sometimes we needed to use the queryKey of the current page to perform certain tasks like updating a specific row in the view. This was always tedious.
 
-But we were not discouraged. We knew that every challenge presented an opportunity for growth and development. So, we set out to find a solution. This package would handle dynamic queryKeys in Tanstack-Query and solve other related problems. It made configuring Tanstack-Query to connect to the Backend API and managing GET, POST, PUT, and PATCH requests a breeze. It also solved the problem of dynamic queryKeys, making it much easier to update specific rows in the view.
+But we were not discouraged. So, we set out to find a solution which led to the development of this package. This package would handle dynamic queryKeys in Tanstack-Query and solve other related problems. It made configuring Tanstack-Query to connect to the Backend API and managing GET, POST, PUT, and PATCH requests a breeze. It also solved the problem of dynamic queryKeys, making it much easier to update specific rows in the view.
 
 ---
 
