@@ -1,6 +1,6 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
-import { useQuery } from '@tanstack/react-query';
-import { startTransition, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useQueryConfig } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
@@ -10,16 +10,22 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   path,
   load = false,
   queryOptions,
+  keyTracker,
 }: {
   path: string;
   load?: boolean;
   queryOptions?: TanstackQueryOption<TResponse>;
+  keyTracker?: string;
 }) => {
   const [requestPath, updatePath] = useState<string>(path);
   const [options, setOptions] = useState<any>(queryOptions);
   const [page, setPage] = useState<number>(1);
 
   const { headers, baseURL, timeout } = useQueryConfig();
+
+  let queryClient = useQueryClient();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  queryClient = useMemo(() => queryClient, []);
 
   const sendRequest = async (
     res: (
@@ -60,6 +66,12 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       updatePath(path);
     }
   }, [path]);
+
+  useEffect(() => {
+    if (keyTracker) {
+      queryClient.setQueryData([keyTracker], [requestPath, {}]);
+    }
+  }, [keyTracker, requestPath, queryClient]);
 
   const nextPage = () => {
     if (query.data?.data.pagination) {
