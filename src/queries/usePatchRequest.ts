@@ -3,11 +3,11 @@ import { useMutation } from '@tanstack/react-query';
 import { scrollToTop } from '../helpers';
 import { HttpMethod, makeRequest } from '../request';
 
+import { useQueryConfig } from '../config';
 import type {
   IRequestError,
   IRequestSuccess,
 } from '../request/request.interface';
-import { useQueryConfig } from './useQueryConfig';
 
 export const usePatchRequest = <TResponse>({
   path,

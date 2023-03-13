@@ -1,9 +1,9 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useQueryConfig } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
-import { useQueryConfig } from './useQueryConfig';
 
 export const useDeleteRequest = <TResponse>() => {
   const [requestPath, updateDeletePath] = useState<string>('');

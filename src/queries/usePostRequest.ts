@@ -1,8 +1,8 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
+import { useQueryConfig } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
-import { useQueryConfig } from './useQueryConfig';
 
 export const usePostRequest = <TResponse>({
   path,

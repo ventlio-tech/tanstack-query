@@ -1,10 +1,10 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { startTransition, useEffect, useState } from 'react';
+import { useQueryConfig } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
 import type { IPagination, TanstackQueryOption } from './queries.interface';
-import { useQueryConfig } from './useQueryConfig';
 
 export const useGetRequest = <TResponse extends Record<string, any>>({
   path,
