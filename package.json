@@ -3,6 +3,13 @@
   "version": "0.2.7",
   "license": "MIT",
   "main": "dist/index.js",
+  "contributors": [
+    {
+      "email": "soromgawide@gmail.com",
+      "name": "stancobridge",
+      "url": "https://github.com/stancobridge"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ventlio-tech/tanstact-query.git"
