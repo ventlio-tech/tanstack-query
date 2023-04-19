@@ -49,10 +49,12 @@ export async function makeRequest<TResponse>({
       statusCode: responseCode,
     });
   } catch (error: any) {
+    const errorData = error.response.data;
     return errorTransformer({
       statusCode: error.status,
       message: error.message,
       code: error.status || error.statusCode,
+      ...errorData,
     });
   }
 }
