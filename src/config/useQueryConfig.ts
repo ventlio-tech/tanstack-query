@@ -8,9 +8,7 @@ export const useQueryConfig = (): TanstackQueryConfig => {
     headers = {},
     baseURL = '',
     timeout = 10000,
-  } = queryClient.getQueryData<TanstackQueryConfig>([
-    'config',
-  ]) as TanstackQueryConfig;
+  } = queryClient.getQueryData<TanstackQueryConfig>(['config']) ?? {};
 
   return { headers, baseURL, timeout };
 };
