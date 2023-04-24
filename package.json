@@ -1,6 +1,6 @@
 {
   "name": "@ventlio/tanstack-query",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "license": "MIT",
   "main": "dist/index.js",
   "contributors": [
@@ -12,7 +12,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/ventlio-tech/tanstact-query.git"
+    "url": "https://github.com/ventlio-tech/tanstack-query.git"
   },
   "types": "dist/index.d.ts",
   "author": {
