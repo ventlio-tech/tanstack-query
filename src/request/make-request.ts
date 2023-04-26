@@ -45,8 +45,9 @@ export async function makeRequest<TResponse>({
     }
 
     return successTransformer<TResponse>({
-      data: jsonResp,
       statusCode: responseCode,
+      ...jsonResp,
+      status: resp.status,
     });
   } catch (error: any) {
     const errorData = error.response.data;
