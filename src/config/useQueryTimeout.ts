@@ -7,9 +7,10 @@ export const useQueryTimeout = (): IUseQueryTimeout => {
   const queryClient = useQueryClient();
 
   const setQueryTimeout = (newTimeout: TanstackQueryConfig['timeout']) => {
-    queryClient.setQueryData<TanstackQueryConfig>(['config'], (config) => {
-      (config as TanstackQueryConfig).timeout = newTimeout;
-      return config;
+    queryClient.setQueryData<TanstackQueryConfig>(['config'], (config): any => {
+      const newConfig = { ...config, timeout: newTimeout };
+
+      return newConfig;
     });
   };
 

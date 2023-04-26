@@ -7,9 +7,13 @@ export const useQueryBaseURL = (): IUseQueryBaseURL => {
   const queryClient = useQueryClient();
 
   const setQueryBaseUrl = (newBaseUrl: TanstackQueryConfig['baseURL']) => {
-    queryClient.setQueryData<TanstackQueryConfig>(['config'], (config) => {
-      (config as TanstackQueryConfig).baseURL = newBaseUrl;
-      return config;
+    queryClient.setQueryData<TanstackQueryConfig>(['config'], (config): any => {
+      const newConfig = {
+        ...config,
+        baseURL: newBaseUrl,
+      };
+
+      return newConfig;
     });
   };
 

@@ -7,9 +7,9 @@ export const useQueryHeaders = (): IUseQueryHeaders => {
   const queryClient = useQueryClient();
 
   const setQueryHeaders = (newHeaders: TanstackQueryConfig['headers']) => {
-    queryClient.setQueryData<TanstackQueryConfig>(['config'], (config) => {
-      (config as TanstackQueryConfig).headers = newHeaders;
-      return config;
+    queryClient.setQueryData<TanstackQueryConfig>(['config'], (config): any => {
+      const newConfig = { ...config, headers: newHeaders };
+      return newConfig;
     });
   };
 
