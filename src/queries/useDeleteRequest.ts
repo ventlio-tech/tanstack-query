@@ -1,7 +1,8 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useEnvironmentVariables, useQueryConfig } from '../config';
+import { useEnvironmentVariables } from '../config';
+import { useQueryHeaders } from '../contexts';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 
@@ -11,7 +12,7 @@ export const useDeleteRequest = <TResponse>() => {
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { headers } = useQueryConfig();
+  const { headers } = useQueryHeaders();
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],

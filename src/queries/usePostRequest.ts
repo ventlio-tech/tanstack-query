@@ -1,6 +1,7 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { useEnvironmentVariables, useQueryConfig } from '../config';
+import { useEnvironmentVariables } from '../config';
+import { useQueryHeaders } from '../contexts';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 
@@ -13,7 +14,7 @@ export const usePostRequest = <TResponse>({
 }) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { headers } = useQueryConfig();
+  const { headers } = useQueryHeaders();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(

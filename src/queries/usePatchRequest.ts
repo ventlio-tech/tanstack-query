@@ -3,7 +3,8 @@ import { useMutation } from '@tanstack/react-query';
 import { scrollToTop } from '../helpers';
 import { HttpMethod, makeRequest } from '../request';
 
-import { useEnvironmentVariables, useQueryConfig } from '../config';
+import { useEnvironmentVariables } from '../config';
+import { useQueryHeaders } from '../contexts';
 import type {
   IRequestError,
   IRequestSuccess,
@@ -11,7 +12,7 @@ import type {
 
 export const usePatchRequest = <TResponse>({ path }: { path: string }) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { headers } = useQueryConfig();
+  const { headers } = useQueryHeaders();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(

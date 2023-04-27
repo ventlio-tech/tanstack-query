@@ -30,7 +30,7 @@ const config: RollupOptions = {
     commonjs(),
     json(),
   ],
-  external: ['react', 'axios', '@tanstack/react-query'],
+  external: ['react', 'react-dom', 'axios', '@tanstack/react-query'],
 };
 
 export default config;
