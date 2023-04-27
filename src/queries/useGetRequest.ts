@@ -42,6 +42,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     // get request headers
     const headers: RawAxiosRequestHeaders = (await getHeadersAsync()).headers;
 
+    console.log({ headers });
+
     const postResponse = await makeRequest<TResponse>({
       path: requestPath,
       headers,

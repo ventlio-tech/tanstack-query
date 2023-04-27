@@ -24,6 +24,8 @@ export const usePatchRequest = <TResponse>({ path }: { path: string }) => {
           const headers: RawAxiosRequestHeaders = (await getHeadersAsync())
             .headers;
 
+          console.log({ headers });
+
           makeRequest<TResponse>({
             path: path,
             body: postData,
