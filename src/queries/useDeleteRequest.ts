@@ -1,7 +1,7 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useQueryConfig } from '../config';
+import { useEnvironmentVariables, useQueryConfig } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 
@@ -9,7 +9,9 @@ export const useDeleteRequest = <TResponse>() => {
   const [requestPath, updateDeletePath] = useState<string>('');
   const [options, setOptions] = useState<any>();
 
-  const { headers, baseURL, timeout } = useQueryConfig();
+  const { API_URL, TIMEOUT } = useEnvironmentVariables();
+
+  const { headers } = useQueryConfig();
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
@@ -20,8 +22,8 @@ export const useDeleteRequest = <TResponse>() => {
             path: requestPath,
             headers,
             method: HttpMethod.DELETE,
-            baseURL,
-            timeout,
+            baseURL: API_URL,
+            timeout: TIMEOUT,
           });
           if (postResponse.status) {
             res(postResponse as IRequestSuccess<TResponse>);

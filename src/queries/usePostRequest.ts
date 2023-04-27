@@ -1,6 +1,6 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { useQueryConfig } from '../config';
+import { useEnvironmentVariables, useQueryConfig } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 
@@ -11,7 +11,9 @@ export const usePostRequest = <TResponse>({
   path: string;
   isFormData?: boolean;
 }) => {
-  const { headers, baseURL, timeout } = useQueryConfig();
+  const { API_URL, TIMEOUT } = useEnvironmentVariables();
+
+  const { headers } = useQueryConfig();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
@@ -23,8 +25,8 @@ export const usePostRequest = <TResponse>({
           method: HttpMethod.POST,
           isFormData,
           headers,
-          baseURL,
-          timeout,
+          baseURL: API_URL,
+          timeout: TIMEOUT,
         }).then((postResponse) => {
           if (postResponse.status) {
             // scroll to top after success

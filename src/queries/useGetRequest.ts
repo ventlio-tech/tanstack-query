@@ -1,7 +1,7 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
-import { useQueryConfig } from '../config';
+import { useEnvironmentVariables, useQueryConfig } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
 import type { IPagination, TanstackQueryOption } from './queries.interface';
@@ -21,7 +21,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const [options, setOptions] = useState<any>(queryOptions);
   const [page, setPage] = useState<number>(1);
 
-  const { headers, baseURL, timeout } = useQueryConfig();
+  const { API_URL, TIMEOUT } = useEnvironmentVariables();
+  const { headers } = useQueryConfig();
 
   let queryClient = useQueryClient();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,8 +40,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     const postResponse = await makeRequest<TResponse>({
       path: requestPath,
       headers,
-      baseURL,
-      timeout,
+      baseURL: API_URL,
+      timeout: TIMEOUT,
     });
     if (postResponse.status) {
       res(postResponse as IRequestSuccess<TResponse>);

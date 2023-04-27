@@ -3,14 +3,15 @@ import { useMutation } from '@tanstack/react-query';
 import { scrollToTop } from '../helpers';
 import { HttpMethod, makeRequest } from '../request';
 
-import { useQueryConfig } from '../config';
+import { useEnvironmentVariables, useQueryConfig } from '../config';
 import type {
   IRequestError,
   IRequestSuccess,
 } from '../request/request.interface';
 
 export const usePatchRequest = <TResponse>({ path }: { path: string }) => {
-  const { headers, baseURL, timeout } = useQueryConfig();
+  const { API_URL, TIMEOUT } = useEnvironmentVariables();
+  const { headers } = useQueryConfig();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
@@ -21,8 +22,8 @@ export const usePatchRequest = <TResponse>({ path }: { path: string }) => {
           body: postData,
           method: HttpMethod.PATCH,
           headers,
-          baseURL,
-          timeout,
+          baseURL: API_URL,
+          timeout: TIMEOUT,
         }).then((postResponse) => {
           if (postResponse.status) {
             // scroll to top after success
