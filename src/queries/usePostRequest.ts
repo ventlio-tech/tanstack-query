@@ -1,7 +1,8 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { useEnvironmentVariables } from '../config';
-import { useQueryHeaders } from '../contexts';
+import { useEnvironmentVariables, useQueryHeaders } from '../config';
+
+import type { RawAxiosRequestHeaders } from 'axios';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 
@@ -14,37 +15,41 @@ export const usePostRequest = <TResponse>({
 }) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { headers } = useQueryHeaders();
+  const { getHeadersAsync } = useQueryHeaders();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
     async (postData: any) =>
       new Promise<IRequestSuccess<TResponse>>((res, rej) => {
-        makeRequest<TResponse>({
-          path: path,
-          body: postData,
-          method: HttpMethod.POST,
-          isFormData,
-          headers,
-          baseURL: API_URL,
-          timeout: TIMEOUT,
-        }).then((postResponse) => {
-          if (postResponse.status) {
-            // scroll to top after success
-            window.scrollTo({
-              top: 0,
-              behavior: 'smooth',
-            });
-            res(postResponse as IRequestSuccess<TResponse>);
-          } else {
-            // scroll to top after error
-            window.scrollTo({
-              top: 0,
-              behavior: 'smooth',
-            });
-            rej(postResponse);
-          }
-        });
+        return (async () => {
+          // get request headers
+          const headers: RawAxiosRequestHeaders = await getHeadersAsync();
+          makeRequest<TResponse>({
+            path: path,
+            body: postData,
+            method: HttpMethod.POST,
+            isFormData,
+            headers,
+            baseURL: API_URL,
+            timeout: TIMEOUT,
+          }).then((postResponse) => {
+            if (postResponse.status) {
+              // scroll to top after success
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              });
+              res(postResponse as IRequestSuccess<TResponse>);
+            } else {
+              // scroll to top after error
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              });
+              rej(postResponse);
+            }
+          });
+        })();
       })
   );
   const post = async (

@@ -1,8 +1,8 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
+import type { RawAxiosRequestHeaders } from 'axios';
 import { useState } from 'react';
-import { useEnvironmentVariables } from '../config';
-import { useQueryHeaders } from '../contexts';
+import { useEnvironmentVariables, useQueryHeaders } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 
@@ -12,13 +12,16 @@ export const useDeleteRequest = <TResponse>() => {
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { headers } = useQueryHeaders();
+  const { getHeadersAsync } = useQueryHeaders();
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
     () =>
       new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => {
         setTimeout(async () => {
+          // get request headers
+          const headers: RawAxiosRequestHeaders = await getHeadersAsync();
+
           const postResponse = await makeRequest<TResponse>({
             path: requestPath,
             headers,
