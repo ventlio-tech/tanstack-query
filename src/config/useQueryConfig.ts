@@ -4,11 +4,8 @@ import type { TanstackQueryConfig } from '../types';
 export const useQueryConfig = (): TanstackQueryConfig => {
   const queryClient = useQueryClient();
 
-  const {
-    headers = {},
-    baseURL = '',
-    timeout = 10000,
-  } = queryClient.getQueryData<TanstackQueryConfig>(['config']) ?? {};
+  const { headers = {} } =
+    queryClient.getQueryData<TanstackQueryConfig>(['config']) ?? {};
 
-  return { headers, baseURL, timeout };
+  return { headers };
 };
