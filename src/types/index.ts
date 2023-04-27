@@ -5,6 +5,6 @@ export interface TanstackQueryConfig {
 }
 
 export interface IUseQueryHeaders {
-  getHeadersAsync: () => Promise<RawAxiosRequestHeaders>;
+  getHeadersAsync: () => Promise<TanstackQueryConfig>;
   setQueryHeaders: (header: TanstackQueryConfig['headers']) => void;
 }

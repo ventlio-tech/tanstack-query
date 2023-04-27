@@ -1,15 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
-import type { RawAxiosRequestHeaders } from 'axios';
 import type { IUseQueryHeaders, TanstackQueryConfig } from '../types';
 
 export const useQueryHeaders = (): IUseQueryHeaders => {
   const queryClient = useQueryClient();
 
-  const getHeadersAsync = async (): Promise<RawAxiosRequestHeaders> => {
+  const getHeadersAsync = async (): Promise<TanstackQueryConfig> => {
     return queryClient.ensureQueryData({
       queryKey: ['config'],
       queryFn: () => {
-        return (queryClient.getQueryData(['config']) as any)?.headers;
+        return queryClient.getQueryData(['config']);
       },
     });
   };

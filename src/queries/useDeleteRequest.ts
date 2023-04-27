@@ -20,7 +20,8 @@ export const useDeleteRequest = <TResponse>() => {
       new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => {
         setTimeout(async () => {
           // get request headers
-          const headers: RawAxiosRequestHeaders = await getHeadersAsync();
+          const headers: RawAxiosRequestHeaders = (await getHeadersAsync())
+            .headers;
 
           const postResponse = await makeRequest<TResponse>({
             path: requestPath,

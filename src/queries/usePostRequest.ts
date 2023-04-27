@@ -23,7 +23,9 @@ export const usePostRequest = <TResponse>({
       new Promise<IRequestSuccess<TResponse>>((res, rej) => {
         return (async () => {
           // get request headers
-          const headers: RawAxiosRequestHeaders = await getHeadersAsync();
+          const headers: RawAxiosRequestHeaders = (await getHeadersAsync())
+            .headers;
+
           makeRequest<TResponse>({
             path: path,
             body: postData,
