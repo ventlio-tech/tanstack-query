@@ -23,8 +23,6 @@ export const useDeleteRequest = <TResponse>() => {
           const headers: RawAxiosRequestHeaders = (await getHeadersAsync())
             .headers;
 
-          console.log({ headers });
-
           const postResponse = await makeRequest<TResponse>({
             path: requestPath,
             headers,

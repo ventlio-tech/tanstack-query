@@ -19,6 +19,7 @@ export async function makeRequest<TResponse>({
 
   // configure request header
 
+  console.log({ isFormData });
   if (!isFormData) {
     headers['Content-Type'] = ContentType.APPLICATION_JSON;
   }

@@ -10,6 +10,8 @@ export const useQueryHeaders = (): IUseQueryHeaders => {
       queryFn: () => {
         return queryClient.getQueryData(['config']);
       },
+      staleTime: Infinity,
+      cacheTime: Infinity,
     });
   };
 
