@@ -7,7 +7,5 @@ export const buildFormData = (body: Record<string, any>) => {
     formData.append(key, body[key]);
   });
 
-  body = formData;
-
-  return body;
+  return formData;
 };

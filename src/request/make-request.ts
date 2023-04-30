@@ -18,9 +18,10 @@ export async function makeRequest<TResponse>({
   body = isFormData ? buildFormData(body as Record<string, any>) : body;
 
   // configure request header
-
   if (!isFormData) {
     headers['Content-Type'] = ContentType.APPLICATION_JSON;
+  } else {
+    delete headers['Content-Type'];
   }
 
   try {

@@ -1,10 +1,19 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { IUseQueryHeaders, TanstackQueryConfig } from '../types';
-import { useQueryConfig } from './useQueryConfig';
 
 export const useQueryHeaders = (): IUseQueryHeaders => {
-  const { headers } = useQueryConfig();
   const queryClient = useQueryClient();
+
+  const getHeadersAsync = async (): Promise<TanstackQueryConfig> => {
+    return queryClient.ensureQueryData({
+      queryKey: ['config'],
+      queryFn: () => {
+        return queryClient.getQueryData(['config']);
+      },
+      staleTime: Infinity,
+      cacheTime: Infinity,
+    });
+  };
 
   const setQueryHeaders = (newHeaders: TanstackQueryConfig['headers']) => {
     queryClient.setQueryData<TanstackQueryConfig>(['config'], (config): any => {
@@ -13,5 +22,5 @@ export const useQueryHeaders = (): IUseQueryHeaders => {
     });
   };
 
-  return { headers, setQueryHeaders };
+  return { setQueryHeaders, getHeadersAsync };
 };

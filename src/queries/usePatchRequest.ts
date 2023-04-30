@@ -1,9 +1,10 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
+import { useEnvironmentVariables, useQueryHeaders } from '../config';
 import { scrollToTop } from '../helpers';
 import { HttpMethod, makeRequest } from '../request';
 
-import { useEnvironmentVariables, useQueryConfig } from '../config';
+import type { RawAxiosRequestHeaders } from 'axios';
 import type {
   IRequestError,
   IRequestSuccess,
@@ -11,33 +12,40 @@ import type {
 
 export const usePatchRequest = <TResponse>({ path }: { path: string }) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { headers } = useQueryConfig();
+
+  const { getHeadersAsync } = useQueryHeaders();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
     (postData: any) =>
       new Promise<IRequestSuccess<TResponse>>((res, rej) => {
-        makeRequest<TResponse>({
-          path: path,
-          body: postData,
-          method: HttpMethod.PATCH,
-          headers,
-          baseURL: API_URL,
-          timeout: TIMEOUT,
-        }).then((postResponse) => {
-          if (postResponse.status) {
-            // scroll to top after success
-            scrollToTop();
-            res(postResponse as IRequestSuccess<TResponse>);
-          } else {
-            // scroll to top after error
-            window.scrollTo({
-              top: 0,
-              behavior: 'smooth',
-            });
-            rej(postResponse);
-          }
-        });
+        return (async () => {
+          // get request headers
+          const headers: RawAxiosRequestHeaders = (await getHeadersAsync())
+            .headers;
+
+          makeRequest<TResponse>({
+            path: path,
+            body: postData,
+            method: HttpMethod.PATCH,
+            headers,
+            baseURL: API_URL,
+            timeout: TIMEOUT,
+          }).then((postResponse) => {
+            if (postResponse.status) {
+              // scroll to top after success
+              scrollToTop();
+              res(postResponse as IRequestSuccess<TResponse>);
+            } else {
+              // scroll to top after error
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              });
+              rej(postResponse);
+            }
+          });
+        })();
       })
   );
 

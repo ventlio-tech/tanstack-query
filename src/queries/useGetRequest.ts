@@ -1,7 +1,9 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { RawAxiosRequestHeaders } from 'axios';
 import { startTransition, useEffect, useMemo, useState } from 'react';
-import { useEnvironmentVariables, useQueryConfig } from '../config';
+import { useEnvironmentVariables, useQueryHeaders } from '../config';
+
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
 import type { IPagination, TanstackQueryOption } from './queries.interface';
@@ -22,7 +24,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const [page, setPage] = useState<number>(1);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { headers } = useQueryConfig();
+  const { getHeadersAsync } = useQueryHeaders();
 
   let queryClient = useQueryClient();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -37,6 +39,9 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     ) => void,
     rej: (reason?: any) => void
   ) => {
+    // get request headers
+    const headers: RawAxiosRequestHeaders = (await getHeadersAsync()).headers;
+
     const postResponse = await makeRequest<TResponse>({
       path: requestPath,
       headers,
