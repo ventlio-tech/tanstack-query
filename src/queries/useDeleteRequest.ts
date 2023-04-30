@@ -12,7 +12,7 @@ export const useDeleteRequest = <TResponse>() => {
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { getHeadersAsync } = useQueryHeaders();
+  const { getHeaders } = useQueryHeaders();
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
@@ -20,8 +20,7 @@ export const useDeleteRequest = <TResponse>() => {
       new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => {
         setTimeout(async () => {
           // get request headers
-          const headers: RawAxiosRequestHeaders = (await getHeadersAsync())
-            .headers;
+          const headers: RawAxiosRequestHeaders = getHeaders();
 
           const postResponse = await makeRequest<TResponse>({
             path: requestPath,

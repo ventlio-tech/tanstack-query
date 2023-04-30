@@ -24,7 +24,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const [page, setPage] = useState<number>(1);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { getHeadersAsync } = useQueryHeaders();
+  const { getHeaders } = useQueryHeaders();
 
   let queryClient = useQueryClient();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -40,7 +40,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     rej: (reason?: any) => void
   ) => {
     // get request headers
-    const headers: RawAxiosRequestHeaders = (await getHeadersAsync()).headers;
+    const headers: RawAxiosRequestHeaders = getHeaders();
 
     const postResponse = await makeRequest<TResponse>({
       path: requestPath,
