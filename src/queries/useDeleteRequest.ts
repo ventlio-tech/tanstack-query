@@ -63,10 +63,6 @@ export const useDeleteRequest = <TResponse>() => {
     await updatedPathAsync(link);
     await setOptionsAsync(deleteOptions);
 
-    // return query.refetch<TResponse>({
-    //   queryKey: [link, {}],
-    // });
-
     return query.data;
   };
 

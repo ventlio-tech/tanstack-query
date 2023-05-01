@@ -27,6 +27,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const { getHeaders } = useQueryHeaders();
 
   let queryClient = useQueryClient();
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   queryClient = useMemo(() => queryClient, []);
 
@@ -42,16 +43,16 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     // get request headers
     const headers: RawAxiosRequestHeaders = getHeaders();
 
-    const postResponse = await makeRequest<TResponse>({
+    const getResponse = await makeRequest<TResponse>({
       path: requestPath,
       headers,
       baseURL: API_URL,
       timeout: TIMEOUT,
     });
-    if (postResponse.status) {
-      res(postResponse as IRequestSuccess<TResponse>);
+    if (getResponse.status) {
+      res(getResponse as IRequestSuccess<TResponse>);
     } else {
-      rej(postResponse);
+      rej(getResponse);
     }
   };
 
@@ -75,9 +76,22 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   useEffect(() => {
     if (keyTracker) {
+      queryClient.setQueryDefaults([keyTracker], {
+        staleTime: Infinity,
+        cacheTime: Infinity,
+      });
       queryClient.setQueryData([keyTracker], [requestPath, {}]);
     }
   }, [keyTracker, requestPath, queryClient]);
+
+  useEffect(() => {
+    if (query.isStale) {
+      queryClient.removeQueries({
+        queryKey: [keyTracker],
+        exact: true,
+      });
+    }
+  }, [query.isStale, keyTracker, queryClient]);
 
   const nextPage = () => {
     if (query.data?.data.pagination) {
