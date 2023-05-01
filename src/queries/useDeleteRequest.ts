@@ -36,7 +36,7 @@ export const useDeleteRequest = <TResponse>() => {
           }
         }, 200);
       }),
-    { ...options }
+    { enabled: false, ...options }
   );
 
   const updatedPathAsync = async (link: string) => {
