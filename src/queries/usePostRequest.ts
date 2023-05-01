@@ -15,7 +15,7 @@ export const usePostRequest = <TResponse>({
 }) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { getHeadersAsync } = useQueryHeaders();
+  const { getHeaders } = useQueryHeaders();
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
@@ -23,8 +23,7 @@ export const usePostRequest = <TResponse>({
       new Promise<IRequestSuccess<TResponse>>((res, rej) => {
         return (async () => {
           // get request headers
-          const headers: RawAxiosRequestHeaders = (await getHeadersAsync())
-            .headers;
+          const headers: RawAxiosRequestHeaders = getHeaders();
 
           makeRequest<TResponse>({
             path: path,

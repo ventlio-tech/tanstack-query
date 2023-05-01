@@ -10,6 +10,8 @@ But we were not discouraged. So, we set out to find a solution which led to the 
 
 ---
 
+> Please note that this package is still being developed and may not function as expected. We are working to refine its implementation structure to meet a functional standard. The documentation may not align with the current implementation, so if you encounter any difficulties while setting up the package, please raise an issue in the GitHub repository. We appreciate your patience and understanding as we work to improve this package.
+
 ## Install
 
 > You must install @tanstack/react-query and axios first to use this package
@@ -28,28 +30,32 @@ $ npm install @ventlio/tanstack-query
 $ yarn add @ventlio/tanstack-query
 ```
 
+
 ## Getting Started
 
 Follow the below instructions to have the package running on your project
 
+### Set the environment variables
+```env
+# For ReactJS
+REACT_APP_API_URL='https://api.example.com'
+REACT_APP_API_TIMEOUT=300000
+
+# For NextJS
+NEXT_PUBLIC_API_URL='https://api.example.com'
+NEXT_PUBLIC_API_TIMEOUT=300000
+
+```
 ```js
 import { QueryClient } from '@tanstack/react-query';
-import { TanstackQueryConfig } from '@ventlio/tanstack-query';
+import { TanstackQueryConfig, bootstrapQueryRequest } from '@ventlio/tanstack-query';
 
 // Global queryClient
 const queryClient = new QueryClient();
 
 // do this before adding the queryClient to QueryClientProvider
-queryClient.setQueryData <
-  TanstackQueryConfig >
-  (['config'],
-  {
-    baseURL: 'https://pokeapi.co/api/v2',
-    timeout: 10000,
-    headers: {
-      Authorization: `Bearer Hello`,
-    },
-  });
+bootstrapQueryRequest(queryClient);
+
 ```
 
 You can now use it in a QueryClientProvider
@@ -78,9 +84,7 @@ import {
 } from '@ventlio/tanstack-query';
 
 function LoginPage() {
-  const { baseURL, setQueryBaseUrl } = useQueryBaseURL();
   const { headers, setQueryHeaders } = useQueryHeaders();
-  const { timeout, setQueryTimeout } = useQueryTimeout();
 
   useEffect(() => {
     // after user has logged in successfully set the authorization header token

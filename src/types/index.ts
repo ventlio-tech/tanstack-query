@@ -5,6 +5,6 @@ export interface TanstackQueryConfig {
 }
 
 export interface IUseQueryHeaders {
-  getHeadersAsync: () => Promise<TanstackQueryConfig>;
+  getHeaders: () => TanstackQueryConfig['headers'];
   setQueryHeaders: (header: TanstackQueryConfig['headers']) => void;
 }
