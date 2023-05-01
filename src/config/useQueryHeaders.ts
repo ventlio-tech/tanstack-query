@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { getDateInFuture } from '../helpers';
 import type { IUseQueryHeaders, TanstackQueryConfig } from '../types';
 
 export const useQueryHeaders = (): IUseQueryHeaders => {
@@ -11,22 +12,21 @@ export const useQueryHeaders = (): IUseQueryHeaders => {
 
   const setQueryHeaders = (newHeaders: TanstackQueryConfig['headers']) => {
     // make sure the config does not expire
-    queryClient.setDefaultOptions({
-      queries: {
-        queryKey: ['config'],
-        staleTime: Infinity,
-        cacheTime: Infinity,
-      },
+    queryClient.setQueryDefaults(['config'], {
+      staleTime: Infinity,
+      cacheTime: Infinity,
     });
 
     // set the config
     queryClient.setQueryData<TanstackQueryConfig>(
       ['config'],
-      (config): any => {
+      (config): TanstackQueryConfig => {
         const newConfig = { ...config, headers: newHeaders };
         return newConfig;
       },
-      {}
+      {
+        updatedAt: getDateInFuture(2),
+      }
     );
   };
 
