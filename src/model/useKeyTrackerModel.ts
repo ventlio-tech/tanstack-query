@@ -4,11 +4,11 @@ export const useKeyTrackerModel = <T>(keyTracker: string) => {
   const queryClient = useQueryClient();
 
   const getQueryKey = (innerKeyTracker?: string) => {
-    const key: any[] | undefined = queryClient.getQueryData([
+    const queryKey: any[] | undefined = queryClient.getQueryData([
       innerKeyTracker ?? keyTracker,
     ]);
 
-    return key;
+    return queryKey;
   };
 
   const refetchQuery = async (innerKeyTracker?: string) => {

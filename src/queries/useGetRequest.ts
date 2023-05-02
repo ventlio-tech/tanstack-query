@@ -76,22 +76,15 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   useEffect(() => {
     if (keyTracker) {
+      // set expiration time for the tracker
       queryClient.setQueryDefaults([keyTracker], {
-        staleTime: Infinity,
         cacheTime: Infinity,
+        staleTime: Infinity,
       });
+
       queryClient.setQueryData([keyTracker], [requestPath, {}]);
     }
-  }, [keyTracker, requestPath, queryClient]);
-
-  useEffect(() => {
-    if (query.isStale) {
-      queryClient.removeQueries({
-        queryKey: [keyTracker],
-        exact: true,
-      });
-    }
-  }, [query.isStale, keyTracker, queryClient]);
+  }, [keyTracker, requestPath, queryClient, queryOptions?.staleTime]);
 
   const nextPage = () => {
     if (query.data?.data.pagination) {
