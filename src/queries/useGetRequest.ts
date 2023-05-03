@@ -1,24 +1,30 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { RawAxiosRequestHeaders } from 'axios';
 import { startTransition, useEffect, useMemo, useState } from 'react';
+import type { RawAxiosRequestHeaders } from '../../node_modules/axios/index';
 import { useEnvironmentVariables, useQueryHeaders } from '../config';
 
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
-import type { IPagination, TanstackQueryOption } from './queries.interface';
+import type {
+  DefaultRequestOptions,
+  IPagination,
+  TanstackQueryOption,
+} from './queries.interface';
 
 export const useGetRequest = <TResponse extends Record<string, any>>({
   path,
   load = false,
   queryOptions,
   keyTracker,
+  baseUrl,
+  headers,
 }: {
   path: string;
   load?: boolean;
   queryOptions?: TanstackQueryOption<TResponse>;
   keyTracker?: string;
-}) => {
+} & DefaultRequestOptions) => {
   const [requestPath, updatePath] = useState<string>(path);
   const [options, setOptions] = useState<any>(queryOptions);
   const [page, setPage] = useState<number>(1);
@@ -41,12 +47,12 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     rej: (reason?: any) => void
   ) => {
     // get request headers
-    const headers: RawAxiosRequestHeaders = getHeaders();
+    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
     const getResponse = await makeRequest<TResponse>({
       path: requestPath,
-      headers,
-      baseURL: API_URL,
+      headers: { ...globalHeaders, ...headers },
+      baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
     });
     if (getResponse.status) {
@@ -59,9 +65,9 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
     () =>
-      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => {
-        return sendRequest(res, rej);
-      }),
+      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) =>
+        sendRequest(res, rej)
+      ),
     {
       enabled: load,
       ...options,
