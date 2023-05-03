@@ -7,10 +7,10 @@ import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import type { DefaultRequestOptions } from './queries.interface';
 
-export const useDeleteRequest = <TResponse>({
-  baseUrl,
-  headers,
-}: DefaultRequestOptions) => {
+export const useDeleteRequest = <TResponse>(
+  deleteOptions: DefaultRequestOptions | undefined
+) => {
+  const { baseUrl, headers } = deleteOptions ?? {};
   const [requestPath, updateDeletePath] = useState<string>('');
   const [options, setOptions] = useState<any>();
 
