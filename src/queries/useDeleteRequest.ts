@@ -8,7 +8,7 @@ import { HttpMethod, makeRequest } from '../request';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const useDeleteRequest = <TResponse>(
-  deleteOptions: DefaultRequestOptions | undefined
+  deleteOptions?: DefaultRequestOptions
 ) => {
   const { baseUrl, headers } = deleteOptions ?? {};
   const [requestPath, updateDeletePath] = useState<string>('');
