@@ -8,7 +8,6 @@ export const useRefetchQuery = async (queryKey: any[]) => {
       {
         queryKey,
         exact: true,
-        type: 'active',
       },
       { throwOnError: true, cancelRefetch: true }
     );

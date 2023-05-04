@@ -5,8 +5,12 @@ import { useState } from 'react';
 import { useEnvironmentVariables, useQueryHeaders } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
+import type { DefaultRequestOptions } from './queries.interface';
 
-export const useDeleteRequest = <TResponse>() => {
+export const useDeleteRequest = <TResponse>(
+  deleteOptions?: DefaultRequestOptions
+) => {
+  const { baseUrl, headers } = deleteOptions ?? {};
   const [requestPath, updateDeletePath] = useState<string>('');
   const [options, setOptions] = useState<any>();
 
@@ -14,29 +18,34 @@ export const useDeleteRequest = <TResponse>() => {
 
   const { getHeaders } = useQueryHeaders();
 
+  const sendRequest = async (
+    res: (value: any) => void,
+    rej: (reason?: any) => void
+  ) => {
+    // get request headers
+    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+
+    const postResponse = await makeRequest<TResponse>({
+      path: requestPath,
+      headers: { ...globalHeaders, ...headers },
+      method: HttpMethod.DELETE,
+      baseURL: baseUrl ?? API_URL,
+      timeout: TIMEOUT,
+    });
+    if (postResponse.status) {
+      res(postResponse as IRequestSuccess<TResponse>);
+    } else {
+      rej(postResponse);
+    }
+  };
+
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
     () =>
-      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => {
-        setTimeout(async () => {
-          // get request headers
-          const headers: RawAxiosRequestHeaders = getHeaders();
-
-          const postResponse = await makeRequest<TResponse>({
-            path: requestPath,
-            headers,
-            method: HttpMethod.DELETE,
-            baseURL: API_URL,
-            timeout: TIMEOUT,
-          });
-          if (postResponse.status) {
-            res(postResponse as IRequestSuccess<TResponse>);
-          } else {
-            rej(postResponse);
-          }
-        }, 200);
-      }),
-    { ...options }
+      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) =>
+        sendRequest(res, rej)
+      ),
+    { enabled: false, ...options }
   );
 
   const updatedPathAsync = async (link: string) => {
@@ -62,10 +71,6 @@ export const useDeleteRequest = <TResponse>() => {
 
     await updatedPathAsync(link);
     await setOptionsAsync(deleteOptions);
-
-    // return query.refetch<TResponse>({
-    //   queryKey: [link, {}],
-    // });
 
     return query.data;
   };
