@@ -6,12 +6,7 @@ export const buildFormData = (body: Record<string, any>) => {
       if (item instanceof File) {
         formData.append(key, item);
       } else if (item instanceof Object) {
-        formData.append(
-          key,
-          new Blob([JSON.stringify(item)], {
-            type: 'application/json',
-          })
-        );
+        formData.append(key, JSON.stringify(item));
       } else {
         formData.append(key, item);
       }
@@ -22,12 +17,7 @@ export const buildFormData = (body: Record<string, any>) => {
     if (value instanceof File) {
       formData.append(key, value);
     } else {
-      formData.append(
-        key,
-        new Blob([JSON.stringify(value)], {
-          type: 'application/json',
-        })
-      );
+      formData.append(key, JSON.stringify(value));
     }
   };
 
