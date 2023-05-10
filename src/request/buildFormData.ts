@@ -21,9 +21,9 @@ export const buildFormData = (body: Record<string, any>) => {
           type: 'application/json',
         })
       );
+    } else {
+      formData.append(key, inputValue);
     }
-
-    formData.append(key, inputValue);
   });
 
   return formData;
