@@ -119,11 +119,10 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   };
 
   const constructPaginationLink = (link: string, pageNumber: number) => {
-    const oldParams = new URLSearchParams(link);
-    const oldPage = Number(oldParams.get('page'));
+    const [pathname, queryString] = link.split('?');
+    const queryParams = new URLSearchParams(queryString);
 
-    const [pathname, queryStrings] = link.split('?', 1);
-    const queryParams = new URLSearchParams(queryStrings ?? '');
+    const oldPage = Number(queryParams.get('page'));
 
     queryParams.set('page', pageNumber as any);
 
