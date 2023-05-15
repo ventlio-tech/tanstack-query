@@ -20,11 +20,7 @@ export const usePostRequest = <TResponse>({
 
   const { getHeaders } = useQueryHeaders();
 
-  const sendRequest = async (
-    res: (value: any) => void,
-    rej: (reason?: any) => void,
-    postData: any
-  ) => {
+  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, postData: any) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
@@ -57,16 +53,11 @@ export const usePostRequest = <TResponse>({
 
   // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
-    async (postData: any) =>
-      new Promise<IRequestSuccess<TResponse>>((res, rej) =>
-        sendRequest(res, rej, postData)
-      )
+    async (postData: any) => new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData))
   );
   const post = async (
     data: any,
-    options?:
-      | MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown>
-      | undefined
+    options?: MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown> | undefined
   ): Promise<IRequestSuccess<TResponse>> => {
     return mutation.mutateAsync(data, options);
   };

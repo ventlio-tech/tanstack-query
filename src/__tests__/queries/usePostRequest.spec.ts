@@ -15,9 +15,7 @@ describe('usePostRequest', () => {
   });
 
   it('should return post function and mutation object', () => {
-    const { result } = renderHook(() =>
-      usePostRequest<{ id: number; name: string }>({ path })
-    );
+    const { result } = renderHook(() => usePostRequest<{ id: number; name: string }>({ path }));
 
     expect(result.current.post).toBeInstanceOf(Function);
     expect(result.current.isLoading).toBe(false);
@@ -28,9 +26,7 @@ describe('usePostRequest', () => {
   it('should make post request and return response data', async () => {
     mockAxios.onPost(path).reply(200, response);
 
-    const { result, waitForNextUpdate } = renderHook(() =>
-      usePostRequest<{ id: number; name: string }>({ path })
-    );
+    const { result, waitForNextUpdate } = renderHook(() => usePostRequest<{ id: number; name: string }>({ path }));
 
     const responsePromise = result.current.post(postData);
 
@@ -48,9 +44,7 @@ describe('usePostRequest', () => {
     const errorMessage = 'Request failed with status code 500';
     mockAxios.onPost(path).reply(500, { message: errorMessage });
 
-    const { result, waitForNextUpdate } = renderHook(() =>
-      usePostRequest<{ id: number; name: string }>({ path })
-    );
+    const { result, waitForNextUpdate } = renderHook(() => usePostRequest<{ id: number; name: string }>({ path }));
 
     const responsePromise = result.current.post(postData);
 
@@ -72,9 +66,7 @@ describe('usePostRequest', () => {
     formData.append('name', 'John Doe');
     mockAxios.onPost(path).reply(200, response);
 
-    const { result } = renderHook(() =>
-      usePostRequest<{ id: number; name: string }>({ path, isFormData: true })
-    );
+    const { result } = renderHook(() => usePostRequest<{ id: number; name: string }>({ path, isFormData: true }));
 
     const responsePromise = result.current.post(formData);
 

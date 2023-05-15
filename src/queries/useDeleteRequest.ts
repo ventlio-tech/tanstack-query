@@ -7,9 +7,7 @@ import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import type { DefaultRequestOptions } from './queries.interface';
 
-export const useDeleteRequest = <TResponse>(
-  deleteOptions?: DefaultRequestOptions
-) => {
+export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOptions) => {
   const { baseUrl, headers } = deleteOptions ?? {};
   const [requestPath, updateDeletePath] = useState<string>('');
   const [options, setOptions] = useState<any>();
@@ -18,10 +16,7 @@ export const useDeleteRequest = <TResponse>(
 
   const { getHeaders } = useQueryHeaders();
 
-  const sendRequest = async (
-    res: (value: any) => void,
-    rej: (reason?: any) => void
-  ) => {
+  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
@@ -41,10 +36,7 @@ export const useDeleteRequest = <TResponse>(
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
-    () =>
-      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) =>
-        sendRequest(res, rej)
-      ),
+    () => new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej)),
     { enabled: false, ...options }
   );
 

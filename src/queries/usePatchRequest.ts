@@ -4,26 +4,15 @@ import type { RawAxiosRequestHeaders } from 'axios';
 import { useEnvironmentVariables, useQueryHeaders } from '../config';
 import { scrollToTop } from '../helpers';
 import { HttpMethod, makeRequest } from '../request';
-import type {
-  IRequestError,
-  IRequestSuccess,
-} from '../request/request.interface';
+import type { IRequestError, IRequestSuccess } from '../request/request.interface';
 import type { DefaultRequestOptions } from './queries.interface';
 
-export const usePatchRequest = <TResponse>({
-  path,
-  baseUrl,
-  headers,
-}: { path: string } & DefaultRequestOptions) => {
+export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
   const { getHeaders } = useQueryHeaders();
 
-  const sendRequest = async (
-    res: (value: any) => void,
-    rej: (reason?: any) => void,
-    data: any
-  ) => {
+  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
@@ -60,9 +49,7 @@ export const usePatchRequest = <TResponse>({
 
   const patch = async (
     data: any,
-    options?:
-      | MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown>
-      | undefined
+    options?: MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown> | undefined
   ): Promise<IRequestSuccess<TResponse>> => {
     return mutation.mutateAsync(data, options);
   };

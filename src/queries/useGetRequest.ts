@@ -6,11 +6,7 @@ import { useEnvironmentVariables, useQueryHeaders } from '../config';
 
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
-import type {
-  DefaultRequestOptions,
-  IPagination,
-  TanstackQueryOption,
-} from './queries.interface';
+import type { DefaultRequestOptions, IPagination, TanstackQueryOption } from './queries.interface';
 
 export const useGetRequest = <TResponse extends Record<string, any>>({
   path,
@@ -39,10 +35,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   const sendRequest = async (
     res: (
-      value:
-        | IRequestError
-        | IRequestSuccess<TResponse>
-        | PromiseLike<IRequestError | IRequestSuccess<TResponse>>
+      value: IRequestError | IRequestSuccess<TResponse> | PromiseLike<IRequestError | IRequestSuccess<TResponse>>
     ) => void,
     rej: (reason?: any) => void
   ) => {
@@ -64,10 +57,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
-    () =>
-      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) =>
-        sendRequest(res, rej)
-      ),
+    () => new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej)),
     {
       enabled: load,
       ...options,
@@ -95,10 +85,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const nextPage = () => {
     if (query.data?.data.pagination) {
       const pagination: IPagination = query.data.data.pagination;
-      if (
-        pagination.next_page !== pagination.current_page &&
-        pagination.next_page > pagination.current_page
-      ) {
+      if (pagination.next_page !== pagination.current_page && pagination.next_page > pagination.current_page) {
         updatePath(constructPaginationLink(requestPath, pagination.next_page));
       }
     }
@@ -107,13 +94,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const prevPage = () => {
     if (query.data?.data.pagination) {
       const pagination: IPagination = query.data.data.pagination;
-      if (
-        pagination.previous_page !== pagination.current_page &&
-        pagination.previous_page < pagination.current_page
-      ) {
-        updatePath(
-          constructPaginationLink(requestPath, pagination.previous_page)
-        );
+      if (pagination.previous_page !== pagination.current_page && pagination.previous_page < pagination.current_page) {
+        updatePath(constructPaginationLink(requestPath, pagination.previous_page));
       }
     }
   };
