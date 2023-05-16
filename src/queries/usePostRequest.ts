@@ -1,10 +1,12 @@
 import type { MutateOptions } from '@tanstack/react-query';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEnvironmentVariables, useQueryHeaders } from '../config';
 
 import type { RawAxiosRequestHeaders } from 'axios';
+import { scrollToTop } from '../helpers';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
+import type { TanstackQueryConfig } from '../types';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePostRequest = <TResponse>({
@@ -17,38 +19,38 @@ export const usePostRequest = <TResponse>({
   isFormData?: boolean;
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-
+  const queryClient = useQueryClient();
   const { getHeaders } = useQueryHeaders();
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, postData: any) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+    const config = queryClient.getQueryData<TanstackQueryConfig>(['config']);
 
-    makeRequest<TResponse>({
-      path: path,
+    const postResponse = await makeRequest<TResponse>({
+      path,
       body: postData,
       method: HttpMethod.POST,
       isFormData,
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
-    }).then((postResponse) => {
-      if (postResponse.status) {
-        // scroll to top after success
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth',
-        });
-        res(postResponse as IRequestSuccess<TResponse>);
-      } else {
-        // scroll to top after error
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth',
-        });
-        rej(postResponse);
-      }
     });
+
+    if (postResponse.status) {
+      // scroll to top after success
+
+      if (config?.options?.context !== 'app') {
+        scrollToTop();
+      }
+      res(postResponse as IRequestSuccess<TResponse>);
+    } else {
+      // scroll to top after error
+      if (config?.options?.context !== 'app') {
+        scrollToTop();
+      }
+      rej(postResponse);
+    }
   };
 
   // register post mutation

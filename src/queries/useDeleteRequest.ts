@@ -27,6 +27,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
     });
+
     if (postResponse.status) {
       res(postResponse as IRequestSuccess<TResponse>);
     } else {
@@ -50,7 +51,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
 
   const destroy = async (
     link: string,
-    deleteOptions?: UseQueryOptions<
+    internalDeleteOptions?: UseQueryOptions<
       IRequestSuccess<TResponse | undefined>,
       IRequestError,
       IRequestSuccess<TResponse | undefined>,
@@ -58,8 +59,8 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     >
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
     // set enabled to be true for every delete
-    deleteOptions = deleteOptions ?? {};
-    deleteOptions.enabled = true;
+    internalDeleteOptions = internalDeleteOptions ?? {};
+    internalDeleteOptions.enabled = true;
 
     await updatedPathAsync(link);
     await setOptionsAsync(deleteOptions);

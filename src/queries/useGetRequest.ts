@@ -48,6 +48,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
     });
+
     if (getResponse.status) {
       res(getResponse as IRequestSuccess<TResponse>);
     } else {

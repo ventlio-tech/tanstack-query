@@ -1,7 +1,11 @@
 import type { RawAxiosRequestHeaders } from 'axios';
 
 export interface BootstrapQueryRequest {
-  environment: 'app' | 'web' | 'electronjs';
+  environments?: {
+    appBaseUrl: string;
+    appTimeout: number;
+  };
+  context?: 'app' | 'web' | 'electronjs';
 }
 
 export interface TanstackQueryConfig {

@@ -16,27 +16,24 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
-    makeRequest<TResponse>({
+    const patchResponse = await makeRequest<TResponse>({
       path: path,
       body: data,
       method: HttpMethod.PATCH,
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
-    }).then((postResponse) => {
-      if (postResponse.status) {
-        // scroll to top after success
-        scrollToTop();
-        res(postResponse as IRequestSuccess<TResponse>);
-      } else {
-        // scroll to top after error
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth',
-        });
-        rej(postResponse);
-      }
     });
+
+    if (patchResponse.status) {
+      // scroll to top after success
+      scrollToTop();
+      res(patchResponse as IRequestSuccess<TResponse>);
+    } else {
+      // scroll to top after error
+      scrollToTop();
+      rej(patchResponse);
+    }
   };
 
   // register post mutation

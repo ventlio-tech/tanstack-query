@@ -12,10 +12,12 @@ export const useReactNativeEnv = () => {
     const config = queryClient.getQueryData<TanstackQueryConfig>(['config']);
 
     const loadReactNativeEnvIfNeeded = async () => {
-      if (config?.options?.environment === 'app') {
-        const { REACT_NATIVE_API_TIMEOUT, REACT_NATIVE_API_URL } = await require('./loadReactNativeEnv');
-        setAppUrl(REACT_NATIVE_API_URL);
-        setAppTimeout(REACT_NATIVE_API_TIMEOUT);
+      if (config?.options?.context === 'app') {
+        const API_URL = config.options.environments?.appBaseUrl;
+        const API_TIMEOUT = config.options.environments?.appTimeout;
+
+        setAppUrl(API_URL);
+        setAppTimeout(API_TIMEOUT);
       }
     };
 
