@@ -17,19 +17,14 @@ const config: RollupOptions = {
     {
       dir: './dist',
       entryFileNames: '[name].js',
-      format: 'cjs',
+      format: 'esm',
       sourcemap: true,
       exports: 'named',
       preserveModules: true,
       banner: '',
     },
   ],
-  plugins: [
-    resolve(),
-    typescript({ rollupCommonJSResolveHack: false, clean: true }),
-    commonjs(),
-    json(),
-  ],
+  plugins: [resolve(), typescript({ rollupCommonJSResolveHack: false, clean: true }), commonjs(), json()],
   external: ['react', 'react-dom', 'axios', '@tanstack/react-query'],
 };
 

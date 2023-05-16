@@ -1,4 +1,5 @@
-import axios from 'axios';
+import { axiosInstance } from './axios-instance';
+
 import { buildFormData } from './buildFormData';
 import { ContentType, HttpMethod } from './request.enum';
 import type { IMakeRequest } from './request.interface';
@@ -24,8 +25,14 @@ export async function makeRequest<TResponse>({
   }
 
   try {
+    const axios = axiosInstance({ baseURL, headers, timeout });
+
     //   send request
-    const resp = await axios({ baseURL, timeout, headers, method, url: path, data: body });
+    const resp = await axios({
+      url: path,
+      method,
+      data: body,
+    });
 
     // get response json
     const jsonResp: any = await resp.data;
