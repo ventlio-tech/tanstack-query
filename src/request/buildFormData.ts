@@ -1,29 +1,42 @@
 export const buildFormData = (body: Record<string, any>) => {
   const formData = new FormData();
 
+  const handleArrayValue = (key: string, value: any) => {
+    for (const item of value) {
+      if (item instanceof File) {
+        formData.append(key, item);
+      } else if (item instanceof Object) {
+        formData.append(key, JSON.stringify(item));
+      } else {
+        formData.append(key, item);
+      }
+    }
+  };
+
+  const handleObjectValue = (key: string, value: any) => {
+    if (value instanceof File) {
+      formData.append(key, value);
+    } else {
+      formData.append(key, JSON.stringify(value));
+    }
+  };
+
+  const handlePrimitiveValue = (key: string, value: any) => {
+    formData.append(key, value);
+  };
+
   const bodyKeys = Object.keys(body);
 
   bodyKeys.forEach((key) => {
     const inputValue = body[key];
 
-    // if inputValue is array and the first item is array, append everything to the
-    if (inputValue instanceof Array && inputValue.length > 0) {
-      // append all files
-      for (const file of inputValue) {
-        formData.append(key, file);
-      }
+    if (Array.isArray(inputValue) && inputValue.length > 0) {
+      handleArrayValue(key, inputValue);
+    } else if (inputValue instanceof Object) {
+      handleObjectValue(key, inputValue);
+    } else {
+      handlePrimitiveValue(key, inputValue);
     }
-    // else if inputValue is Object upload it as blob
-    else if (inputValue instanceof Object) {
-      formData.append(
-        key,
-        new Blob([JSON.stringify(inputValue)], {
-          type: 'application/json',
-        })
-      );
-    }
-
-    formData.append(key, inputValue);
   });
 
   return formData;

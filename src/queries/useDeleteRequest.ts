@@ -7,9 +7,7 @@ import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import type { DefaultRequestOptions } from './queries.interface';
 
-export const useDeleteRequest = <TResponse>(
-  deleteOptions?: DefaultRequestOptions
-) => {
+export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOptions) => {
   const { baseUrl, headers } = deleteOptions ?? {};
   const [requestPath, updateDeletePath] = useState<string>('');
   const [options, setOptions] = useState<any>();
@@ -18,10 +16,7 @@ export const useDeleteRequest = <TResponse>(
 
   const { getHeaders } = useQueryHeaders();
 
-  const sendRequest = async (
-    res: (value: any) => void,
-    rej: (reason?: any) => void
-  ) => {
+  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
@@ -32,6 +27,7 @@ export const useDeleteRequest = <TResponse>(
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
     });
+
     if (postResponse.status) {
       res(postResponse as IRequestSuccess<TResponse>);
     } else {
@@ -41,10 +37,7 @@ export const useDeleteRequest = <TResponse>(
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
-    () =>
-      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) =>
-        sendRequest(res, rej)
-      ),
+    () => new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej)),
     { enabled: false, ...options }
   );
 
@@ -58,7 +51,7 @@ export const useDeleteRequest = <TResponse>(
 
   const destroy = async (
     link: string,
-    deleteOptions?: UseQueryOptions<
+    internalDeleteOptions?: UseQueryOptions<
       IRequestSuccess<TResponse | undefined>,
       IRequestError,
       IRequestSuccess<TResponse | undefined>,
@@ -66,8 +59,8 @@ export const useDeleteRequest = <TResponse>(
     >
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
     // set enabled to be true for every delete
-    deleteOptions = deleteOptions ?? {};
-    deleteOptions.enabled = true;
+    internalDeleteOptions = internalDeleteOptions ?? {};
+    internalDeleteOptions.enabled = true;
 
     await updatedPathAsync(link);
     await setOptionsAsync(deleteOptions);

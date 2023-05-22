@@ -1,14 +1,7 @@
-import type {
-  IRequestError,
-  IRequestSuccess,
-  IServerRequestError,
-  IServerRequestSuccess,
-} from './request.interface';
+import type { IRequestError, IRequestSuccess, IServerRequestError, IServerRequestSuccess } from './request.interface';
 
 //
-export const errorTransformer = (
-  data: IServerRequestError & { statusCode: number }
-): IRequestError => {
+export const errorTransformer = (data: IServerRequestError & { statusCode: number }): IRequestError => {
   return {
     message: data.message,
     statusCode: data.statusCode,
@@ -19,9 +12,7 @@ export const errorTransformer = (
 };
 
 //
-export const successTransformer = <T>(
-  data: IServerRequestSuccess & { statusCode: number }
-): IRequestSuccess<T> => {
+export const successTransformer = <T>(data: IServerRequestSuccess & { statusCode: number }): IRequestSuccess<T> => {
   return {
     message: data.message ?? 'Request successful',
     statusCode: data.statusCode,

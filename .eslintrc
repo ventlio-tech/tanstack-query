@@ -10,13 +10,7 @@
     "plugin:import/typescript"
   ],
   "parser": "@typescript-eslint/parser",
-  "plugins": [
-    "@typescript-eslint",
-    "react",
-    "react-hooks",
-    "prettier",
-    "import"
-  ],
+  "plugins": ["@typescript-eslint", "react", "react-hooks", "prettier", "import"],
   "rules": {
     "react-hooks/rules-of-hooks": "error",
 
@@ -43,7 +37,26 @@
     "import/no-unresolved": ["error"],
     "import/no-unused-modules": ["off", { "unusedExports": true }],
     "no-redeclare": "off",
-    "react-hooks/exhaustive-deps": "error"
+    "react-hooks/exhaustive-deps": "error",
+    "max-len": [
+      "error",
+      {
+        "code": 120,
+        "tabWidth": 2,
+        "ignoreUrls": true,
+        "ignoreStrings": true,
+        "ignoreTemplateLiterals": true
+      }
+    ],
+    "prettier/prettier": [
+      "error",
+      {
+        "printWidth": 120
+      },
+      {
+        "usePrettierrc": true
+      }
+    ]
   },
   "settings": {
     "import/parsers": {

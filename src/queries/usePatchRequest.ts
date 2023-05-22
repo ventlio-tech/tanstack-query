@@ -4,50 +4,36 @@ import type { RawAxiosRequestHeaders } from 'axios';
 import { useEnvironmentVariables, useQueryHeaders } from '../config';
 import { scrollToTop } from '../helpers';
 import { HttpMethod, makeRequest } from '../request';
-import type {
-  IRequestError,
-  IRequestSuccess,
-} from '../request/request.interface';
+import type { IRequestError, IRequestSuccess } from '../request/request.interface';
 import type { DefaultRequestOptions } from './queries.interface';
 
-export const usePatchRequest = <TResponse>({
-  path,
-  baseUrl,
-  headers,
-}: { path: string } & DefaultRequestOptions) => {
+export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
   const { getHeaders } = useQueryHeaders();
 
-  const sendRequest = async (
-    res: (value: any) => void,
-    rej: (reason?: any) => void,
-    data: any
-  ) => {
+  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
-    makeRequest<TResponse>({
+    const patchResponse = await makeRequest<TResponse>({
       path: path,
       body: data,
       method: HttpMethod.PATCH,
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
-    }).then((postResponse) => {
-      if (postResponse.status) {
-        // scroll to top after success
-        scrollToTop();
-        res(postResponse as IRequestSuccess<TResponse>);
-      } else {
-        // scroll to top after error
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth',
-        });
-        rej(postResponse);
-      }
     });
+
+    if (patchResponse.status) {
+      // scroll to top after success
+      scrollToTop();
+      res(patchResponse as IRequestSuccess<TResponse>);
+    } else {
+      // scroll to top after error
+      scrollToTop();
+      rej(patchResponse);
+    }
   };
 
   // register post mutation
@@ -60,9 +46,7 @@ export const usePatchRequest = <TResponse>({
 
   const patch = async (
     data: any,
-    options?:
-      | MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown>
-      | undefined
+    options?: MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown> | undefined
   ): Promise<IRequestSuccess<TResponse>> => {
     return mutation.mutateAsync(data, options);
   };
