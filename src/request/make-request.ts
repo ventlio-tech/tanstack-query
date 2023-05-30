@@ -13,22 +13,36 @@ export async function makeRequest<TResponse>({
   headers = {},
   baseURL,
   timeout,
+  appFileConfig,
 }: IMakeRequest) {
-  // configure body
-  body = isFormData ? axios.toFormData(body as Record<string, any>) : body;
+  // check if file is included in mobile app environment and extract all file input to avoid
+  // it being formatted to object using axios formData builder
+  const isApp = appFileConfig?.isApp;
+  const appFiles: Record<string, string> = isApp ? getAppFiles(body, appFileConfig.fileSelectors) : {};
 
-  // configure request header
+  // configure body
+  body = (isFormData ? axios.toFormData(body as FormData) : body) as FormData;
+
+  // configure request header1
   if (!isFormData) {
     headers['Content-Type'] = ContentType.APPLICATION_JSON;
   } else {
-    delete headers['Content-Type'];
+    if (isApp) {
+      headers['Content-Type'] = ContentType.MULTIPART_FORM_DATA;
+      // add the app files
+      for (const fileKey in appFiles) {
+        body.append(fileKey, appFiles[fileKey]);
+      }
+    } else {
+      delete headers['Content-Type'];
+    }
   }
 
   try {
-    const axios = axiosInstance({ baseURL, headers, timeout });
+    const axiosRequest = axiosInstance({ baseURL, headers, timeout });
 
     //   send request
-    const resp = await axios({
+    const resp = await axiosRequest({
       url: path,
       method,
       data: body,
@@ -59,4 +73,19 @@ export async function makeRequest<TResponse>({
       ...errorData,
     });
   }
+}
+function getAppFiles(body: any, fileSelectors: string[] = []) {
+  const files: Record<string, string> = {};
+
+  if (body) {
+    if (fileSelectors.length > 0) {
+      //
+      for (const fileKey of fileSelectors) {
+        files[fileKey] = body[fileKey];
+        delete body[fileKey];
+      }
+    }
+  }
+
+  return files;
 }

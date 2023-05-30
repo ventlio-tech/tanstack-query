@@ -1,6 +1,6 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEnvironmentVariables, useQueryHeaders } from '../config';
+import { useEnvironmentVariables, useQueryHeaders, useReactNativeEnv } from '../config';
 
 import type { RawAxiosRequestHeaders } from 'axios';
 import { scrollToTop } from '../helpers';
@@ -14,14 +14,16 @@ export const usePostRequest = <TResponse>({
   isFormData = false,
   baseUrl,
   headers,
+  fileSelectors,
 }: {
   path: string;
   isFormData?: boolean;
+  fileSelectors?: string[];
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const queryClient = useQueryClient();
   const { getHeaders } = useQueryHeaders();
-
+  const { isApp } = useReactNativeEnv();
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, postData: any) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
@@ -35,6 +37,10 @@ export const usePostRequest = <TResponse>({
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
+      appFileConfig: {
+        isApp,
+        fileSelectors,
+      },
     });
 
     if (postResponse.status) {

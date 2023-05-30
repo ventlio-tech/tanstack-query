@@ -5,9 +5,9 @@ export interface BootstrapQueryRequest {
     appBaseUrl: string;
     appTimeout: number;
   };
-  context?: 'app' | 'web' | 'electronjs';
+  context?: ContextType;
 }
-
+export type ContextType = 'app' | 'web' | 'electronjs';
 export interface TanstackQueryConfig {
   headers: RawAxiosRequestHeaders;
   options?: BootstrapQueryRequest;

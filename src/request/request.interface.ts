@@ -9,8 +9,13 @@ export interface IMakeRequest {
   method?: HttpMethod;
   isFormData?: boolean;
   headers: RawAxiosRequestHeaders;
+  appFileConfig?: AppFileConfig;
 }
 
+export interface AppFileConfig {
+  fileSelectors?: string[];
+  isApp: boolean;
+}
 export interface AxiosInstanceOption {
   bearerToken?: string;
   contentType?: string;
