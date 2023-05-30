@@ -1,6 +1,6 @@
+import axios from 'axios';
 import { axiosInstance } from './axios-instance';
 
-import { buildFormData } from './buildFormData';
 import { ContentType, HttpMethod } from './request.enum';
 import type { IMakeRequest } from './request.interface';
 import { errorTransformer, successTransformer } from './transformer';
@@ -15,7 +15,7 @@ export async function makeRequest<TResponse>({
   timeout,
 }: IMakeRequest) {
   // configure body
-  body = isFormData ? buildFormData(body as Record<string, any>) : body;
+  body = isFormData ? axios.toFormData(body as Record<string, any>) : body;
 
   // configure request header
   if (!isFormData) {
