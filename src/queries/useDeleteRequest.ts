@@ -63,7 +63,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     internalDeleteOptions.enabled = true;
 
     await updatedPathAsync(link);
-    await setOptionsAsync(deleteOptions);
+    await setOptionsAsync(internalDeleteOptions);
 
     return query.data;
   };
