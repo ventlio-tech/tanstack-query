@@ -31,14 +31,7 @@ export async function makeRequest<TResponse>({
       headers['Content-Type'] = ContentType.MULTIPART_FORM_DATA;
       // add the app files
       for (const fileKey in appFiles) {
-        const currentFile = appFiles[fileKey];
-        if (Array.isArray(currentFile)) {
-          for (const innerFile of currentFile) {
-            body.append(fileKey, innerFile);
-          }
-        } else {
-          body.append(fileKey, currentFile);
-        }
+        body.append(fileKey, appFiles[fileKey]);
       }
     } else {
       delete headers['Content-Type'];
