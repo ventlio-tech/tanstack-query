@@ -1,8 +1,10 @@
-import type { QueryFilters } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { QueryModel } from './Model';
+import { useKeyTrackerModel } from './useKeyTrackerModel';
 
-export const useQueryModel = (queryKey: any[], filters?: QueryFilters | undefined) => {
+export const useQueryModel = <T>(keyTracker: string): QueryModel<T> => {
   const queryClient = useQueryClient();
-
-  return queryClient.getQueryData(queryKey, filters);
+  const { getQueryKey } = useKeyTrackerModel(keyTracker);
+  const queryKey = getQueryKey() as any[];
+  return new QueryModel<T>(queryKey, queryClient);
 };
