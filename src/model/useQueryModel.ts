@@ -2,13 +2,33 @@ import { useQueryClient } from '@tanstack/react-query';
 import result from 'lodash.result';
 import set from 'lodash.set';
 import type { TanstackQueryConfig } from '../types';
-import type { QueryModelBuilder } from './model.interface';
+import type { QueryModelAddPosition, QueryModelBuilder } from './model.interface';
 import { useKeyTrackerModel } from './useKeyTrackerModel';
 
 export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): QueryModelBuilder<T> => {
   const queryClient = useQueryClient();
   const { getQueryKey } = useKeyTrackerModel(keyTracker);
   const queryKey = getQueryKey() as any[];
+
+  const add = (data: T, position?: QueryModelAddPosition, path?: string): T | undefined => {
+    let records = findAll(path) ?? [];
+
+    if (!position || position === 'end') {
+      records = [...records, data];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    } else if (position === 'start') {
+      records = [data, ...records];
+    }
+
+    if (!path) {
+      queryClient.setQueryData(queryKey, records);
+    } else {
+      const queryData = queryClient.getQueryData(queryKey, { exact }) ?? {};
+      queryClient.setQueryData(queryKey, set(queryData, path, records));
+    }
+
+    return data;
+  };
 
   const findAll = (path?: string): T[] | undefined => {
     const data = queryClient.getQueryData(queryKey, { exact });
@@ -104,5 +124,5 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     return updated;
   };
 
-  return { find, findAll, findMany, remove, update };
+  return { find, findAll, findMany, remove, update, add };
 };
