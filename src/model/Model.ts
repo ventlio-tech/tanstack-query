@@ -71,7 +71,7 @@ export class QueryModel<T> implements QueryModelBuilder<T> {
     return updatedRecord;
   }
 
-  delete(id: number | string, path?: string): boolean {
+  remove(id: number | string, path?: string): boolean {
     const oldData = this.findAll(path) ?? [];
     const modelConfig = this.getModelConfig();
 
