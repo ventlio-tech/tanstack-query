@@ -1,6 +1,6 @@
 {
   "name": "@ventlio/tanstack-query",
-  "version": "0.2.63-beta.3",
+  "version": "0.2.65",
   "license": "MIT",
   "main": "dist/index.js",
   "contributors": [
@@ -51,6 +51,8 @@
     "@testing-library/react-hooks": "^8.0.1",
     "@types/axios": "^0.14.0",
     "@types/jest": "^29.5.1",
+    "@types/lodash.result": "^4.5.7",
+    "@types/lodash.set": "^4.3.7",
     "@types/node": "*",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
@@ -82,5 +84,9 @@
   "files": [
     "dist/**/*",
     "src"
-  ]
+  ],
+  "dependencies": {
+    "lodash.result": "^4.5.2",
+    "lodash.set": "^4.3.2"
+  }
 }

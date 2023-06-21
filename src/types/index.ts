@@ -1,16 +1,22 @@
 import type { RawAxiosRequestHeaders } from 'axios';
 
-export interface BootstrapQueryRequest {
+export interface BootstrapConfig {
   environments?: {
     appBaseUrl: string;
     appTimeout: number;
   };
-  context?: 'app' | 'web' | 'electronjs';
+  context?: ContextType;
+  modelConfig?: BootstrapModelConfig;
 }
 
+export interface BootstrapModelConfig {
+  idColumn: string;
+}
+
+export type ContextType = 'app' | 'web' | 'electronjs';
 export interface TanstackQueryConfig {
   headers: RawAxiosRequestHeaders;
-  options?: BootstrapQueryRequest;
+  options?: BootstrapConfig;
 }
 
 export interface IUseQueryHeaders {

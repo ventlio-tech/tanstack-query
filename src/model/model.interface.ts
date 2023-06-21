@@ -1,0 +1,10 @@
+export interface QueryModelBuilder<T> {
+  add: (data: T, position?: QueryModelAddPosition, path?: string) => T | undefined;
+  findAll: (path?: string) => T[] | undefined;
+  findMany: (selector: (record: T) => boolean, path?: string) => T[];
+  find: (id: number | string, path?: string) => T | undefined;
+  update: (id: number | string, data: Partial<T>, path?: string) => T | undefined;
+  remove: (id: number, path?: string) => boolean;
+}
+
+export type QueryModelAddPosition = 'start' | 'end';
