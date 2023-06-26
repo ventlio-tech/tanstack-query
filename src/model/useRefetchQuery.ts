@@ -4,9 +4,9 @@ export const useRefetchQuery = async (queryKey: any[]) => {
   const queryClient = useQueryClient();
 
   const refetchQuery = async <T>(innerQueryKey?: any[]) => {
-    await queryClient.refetchQueries(
+    await queryClient.invalidateQueries(
       {
-        queryKey,
+        queryKey: innerQueryKey ?? queryKey,
         exact: true,
       },
       { throwOnError: true, cancelRefetch: true }
