@@ -5,6 +5,8 @@ export interface QueryModelBuilder<T> {
   find: (id: number | string, path?: string) => T | undefined;
   update: (id: number | string, data: Partial<T>, path?: string) => T | undefined;
   remove: (id: number, path?: string) => boolean;
+  get: (path?: string) => T | undefined;
+  set: (data: Partial<T>, path?: string) => T | undefined;
 }
 
 export type QueryModelAddPosition = 'start' | 'end';

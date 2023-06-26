@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import result from 'lodash.result';
-import set from 'lodash.set';
+import { default as lodashSet } from 'lodash.set';
 import type { TanstackQueryConfig } from '../types';
 import type { QueryModelAddPosition, QueryModelBuilder } from './model.interface';
 import { useKeyTrackerModel } from './useKeyTrackerModel';
@@ -24,7 +24,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
       queryClient.setQueryData(queryKey, records);
     } else {
       const queryData = queryClient.getQueryData(queryKey, { exact }) ?? {};
-      queryClient.setQueryData(queryKey, set(queryData, path, records));
+      queryClient.setQueryData(queryKey, lodashSet(queryData, path, records));
     }
 
     return data;
@@ -60,6 +60,24 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     return data.find((record) => (record as Record<string, any>)[modelConfig.idColumn] === id);
   };
 
+  const get = (path?: string): T | undefined => {
+    let data = queryClient.getQueryData(queryKey, { exact });
+    if (path) {
+      data = result<T>(data, path);
+    }
+    return data as T;
+  };
+
+  const set = (newData: any, path?: string): T | undefined => {
+    if (path) {
+      const data = get() as any;
+      newData = lodashSet(data, path, newData);
+
+      return queryClient.setQueryData(queryKey, newData) as T;
+    }
+    return queryClient.setQueryData(queryKey, newData) as T;
+  };
+
   const getModelConfig = () => {
     const { options } = queryClient.getQueryData<TanstackQueryConfig>(['config']) ?? {};
     const { modelConfig } = options ?? {};
@@ -79,7 +97,6 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     let updatedRecord: T | undefined = undefined;
     const newData = oldData.map((record) => {
       let dataRecord = record as Record<string, any>;
-
       if (dataRecord[idColumn] === id) {
         dataRecord = { ...dataRecord, ...data };
         updatedRecord = dataRecord as T;
@@ -92,7 +109,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
       queryClient.setQueryData(queryKey, newData);
     } else {
       const queryData = queryClient.getQueryData(queryKey, { exact }) ?? {};
-      queryClient.setQueryData(queryKey, set(queryData, path, newData));
+      queryClient.setQueryData(queryKey, lodashSet(queryData, path, newData));
     }
     return updatedRecord;
   };
@@ -119,10 +136,10 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
       queryClient.setQueryData(queryKey, newData);
     } else {
       const queryData = queryClient.getQueryData(queryKey, { exact }) ?? {};
-      queryClient.setQueryData(queryKey, set(queryData, path, newData));
+      queryClient.setQueryData(queryKey, lodashSet(queryData, path, newData));
     }
     return updated;
   };
 
-  return { find, findAll, findMany, remove, update, add };
+  return { find, findAll, findMany, remove, update, add, get, set };
 };
