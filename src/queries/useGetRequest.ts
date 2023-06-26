@@ -39,26 +39,30 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     ) => void,
     rej: (reason?: any) => void
   ) => {
-    // get request headers
-    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+    if (load) {
+      // get request headers
+      const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
-    const getResponse = await makeRequest<TResponse>({
-      path: requestPath,
-      headers: { ...globalHeaders, ...headers },
-      baseURL: baseUrl ?? API_URL,
-      timeout: TIMEOUT,
-    });
+      const getResponse = await makeRequest<TResponse>({
+        path: requestPath,
+        headers: { ...globalHeaders, ...headers },
+        baseURL: baseUrl ?? API_URL,
+        timeout: TIMEOUT,
+      });
 
-    if (getResponse.status) {
-      res(getResponse as IRequestSuccess<TResponse>);
+      if (getResponse.status) {
+        res(getResponse as IRequestSuccess<TResponse>);
+      } else {
+        rej(getResponse);
+      }
     } else {
-      rej(getResponse);
+      res(null as any) ;
     }
   };
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
-    () => new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej)),
+    () => new Promise<IRequestSuccess<TResponse> | IRequestError >((res, rej) => sendRequest(res, rej)),
     {
       enabled: load,
       ...options,
