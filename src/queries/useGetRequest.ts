@@ -56,13 +56,13 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
         rej(getResponse);
       }
     } else {
-      res(null as any) ;
+      res(null as any);
     }
   };
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
-    () => new Promise<IRequestSuccess<TResponse> | IRequestError >((res, rej) => sendRequest(res, rej)),
+    () => new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej)),
     {
       enabled: load,
       ...options,
