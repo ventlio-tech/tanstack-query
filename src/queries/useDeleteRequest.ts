@@ -56,14 +56,14 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
       IRequestError,
       IRequestSuccess<TResponse | undefined>,
       Array<any>
-    >
+    > & { cached?: boolean }
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
     // set enabled to be true for every delete
     internalDeleteOptions = internalDeleteOptions ?? {};
     internalDeleteOptions.enabled = true;
 
-    await updatedPathAsync(link);
     await setOptionsAsync(internalDeleteOptions);
+    await updatedPathAsync(link);
 
     return query.data;
   };

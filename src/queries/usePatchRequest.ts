@@ -1,16 +1,20 @@
 import type { MutateOptions } from '@tanstack/react-query';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
 import { useEnvironmentVariables, useQueryHeaders } from '../config';
 import { scrollToTop } from '../helpers';
 import { HttpMethod, makeRequest } from '../request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
+import type { TanstackQueryConfig } from '../types';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
   const { getHeaders } = useQueryHeaders();
+  const queryClient = useQueryClient();
+
+  const config = queryClient.getQueryData<TanstackQueryConfig>(['config']);
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
     // get request headers
@@ -27,11 +31,15 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
 
     if (patchResponse.status) {
       // scroll to top after success
-      scrollToTop();
+      if (config?.options?.context !== 'app') {
+        scrollToTop();
+      }
       res(patchResponse as IRequestSuccess<TResponse>);
     } else {
       // scroll to top after error
-      scrollToTop();
+      if (config?.options?.context !== 'app') {
+        scrollToTop();
+      }
       rej(patchResponse);
     }
   };
