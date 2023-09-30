@@ -11,7 +11,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
   const queryKey = getQueryKey() as any[];
 
   const add = (data: T, position?: QueryModelAddPosition, path?: string): T | undefined => {
-    let records = findAll(path) ?? [];
+    let records = (findAll(path) ?? []) as T[];
 
     if (!position || position === 'end') {
       records = [...records, data];
@@ -30,7 +30,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     return data;
   };
 
-  const findAll = (path?: string): T[] | undefined => {
+  const findAll = (path?: string): T[] | T | undefined => {
     const data = queryClient.getQueryData(queryKey, { exact });
 
     if (!data) {
@@ -45,7 +45,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
   };
 
   const findMany = (selector: (record: T) => boolean, path?: string): T[] => {
-    const data = findAll(path) ?? [];
+    const data = (findAll(path) ?? []) as T[];
     return data.filter(selector);
   };
 
@@ -55,7 +55,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     if (!modelConfig?.idColumn) {
       return undefined;
     }
-    const data = findAll(path) ?? [];
+    const data = (findAll(path) ?? []) as T[];
 
     return data.find((record) => (record as Record<string, any>)[modelConfig.idColumn] === id);
   };
@@ -68,14 +68,13 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     return data as T;
   };
 
-  const set = (newData: any, path?: string): T | undefined => {
+  const set = <DataType>(newData: Partial<DataType>, path?: string): DataType | undefined => {
     if (path) {
       const data = get() as any;
       newData = lodashSet(data, path, newData);
-
-      return queryClient.setQueryData(queryKey, newData) as T;
     }
-    return queryClient.setQueryData(queryKey, newData) as T;
+
+    return queryClient.setQueryData(queryKey, newData) as DataType;
   };
 
   const getModelConfig = () => {
@@ -86,7 +85,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
   };
 
   const update = (id: string | number, data: Partial<T>, path?: string): T | undefined => {
-    const oldData = findAll(path) ?? [];
+    const oldData = (findAll(path) ?? []) as T[];
     const modelConfig = getModelConfig();
 
     if (!modelConfig?.idColumn) {
@@ -115,7 +114,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
   };
 
   const remove = (id: number | string, path?: string): boolean => {
-    const oldData = findAll(path) ?? [];
+    const oldData = (findAll(path) ?? []) as T[];
     const modelConfig = getModelConfig();
 
     if (!modelConfig?.idColumn) {
