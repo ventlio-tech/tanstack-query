@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import 'url-search-params-polyfill';
 import type { BootstrapConfig, TanstackQueryConfig } from '../types';
 
 export const bootstrapQueryRequest = (queryClient: QueryClient, options?: BootstrapConfig): void => {
