@@ -12,7 +12,7 @@ But we were not discouraged. So, we set out to find a solution which led to the 
 
 > Please note that this package is still being developed and may not function as expected. We are working to refine its implementation structure to meet a functional standard. The documentation may not align with the current implementation, so if you encounter any difficulties while setting up the package, please raise an issue in the GitHub repository. We appreciate your patience and understanding as we work to improve this package.
 
-### Financial Tasks
+### Tasks
 
 - [✅] Global settings for requests
 - [✅] Requests context implementations
