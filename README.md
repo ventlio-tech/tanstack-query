@@ -1,4 +1,4 @@
-### This is not a replacement for @tanstack/react-query
+### This is a complementary library that should be used with @tanstack/react-query for API REQUESTS and more
 
 ## WHY THIS PACKAGE?
 
@@ -12,12 +12,24 @@ But we were not discouraged. So, we set out to find a solution which led to the 
 
 > Please note that this package is still being developed and may not function as expected. We are working to refine its implementation structure to meet a functional standard. The documentation may not align with the current implementation, so if you encounter any difficulties while setting up the package, please raise an issue in the GitHub repository. We appreciate your patience and understanding as we work to improve this package.
 
-## Install
+### Financial Tasks
+
+- [✅] Global settings for requests
+- [✅] Requests context implementations
+- [✅] Post, Get, Patch Requests
+- [Not Completed] Persistent queries implementation
+- [❌] Put request
+- [❌] Generic return type (this is currently an issue if the API does not return object with the necessary properties required by the library)
+- [❌] Server sent events
+- [❌] Socket implementations
+- [❌] Tests
+
+## Installation
 
 > You must install @tanstack/react-query and axios first to use this package
 
 ```
-npm install @tanstack/react-query axios
+yarn add @tanstack/react-query axios
 ```
 
 After that install this package
@@ -26,16 +38,41 @@ After that install this package
 $ npm install @ventlio/tanstack-query
 ```
 
+OR
+
 ```
 $ yarn add @ventlio/tanstack-query
 ```
 
+## CURRENT RETURN TYPE
+
+Currently the library return type expects data structure of the below schema, so depending on the API design,
+you can reach out to the developer to implement the return type that follows the below schema.
+
+```js
+export interface IRequestError {
+  statusCode: number;
+  message: string;
+  timeStamp: Date;
+  status: boolean;
+  data?: any;
+}
+
+export interface IRequestSuccess<T> {
+  statusCode: number;
+  message: string;
+  timeStamp: Date;
+  status: boolean;
+  data: T;
+}
+```
 
 ## Getting Started
 
 Follow the below instructions to have the package running on your project
 
 ### Set the environment variables
+
 ```env
 # For ReactJS
 REACT_APP_API_URL='https://api.example.com'
@@ -46,6 +83,7 @@ NEXT_PUBLIC_API_URL='https://api.example.com'
 NEXT_PUBLIC_API_TIMEOUT=300000
 
 ```
+
 ```js
 import { QueryClient } from '@tanstack/react-query';
 import { TanstackQueryConfig, bootstrapQueryRequest } from '@ventlio/tanstack-query';
@@ -56,6 +94,17 @@ const queryClient = new QueryClient();
 // do this before adding the queryClient to QueryClientProvider
 bootstrapQueryRequest(queryClient);
 
+// recommended setup for mobile apps as the .env setup won't work
+bootstrapQueryRequest(queryClient, {
+  context: 'app', // this is required to make the library switch to app context where necessary
+  environments: {
+    appBaseUrl: baseUrl,
+    appTimeout: 30000,
+  },
+  modelConfig: {
+    idColumn: 'id', // used for useQueryModel to uniquely identify query data in a collection/array instance
+  },
+});
 ```
 
 You can now use it in a QueryClientProvider
@@ -77,19 +126,17 @@ function App() {
 Updating the configurations inside a component
 
 ```jsx
-import {
-  useQueryBaseURL,
-  useQueryHeaders,
-  useQueryTimeout,
-} from '@ventlio/tanstack-query';
+import { useQueryBaseURL, useQueryHeaders, useQueryTimeout } from '@ventlio/tanstack-query';
 
 function LoginPage() {
   const { headers, setQueryHeaders } = useQueryHeaders();
-
+  const [authToken, setAuthToken] = useState();
   useEffect(() => {
     // after user has logged in successfully set the authorization header token
-    headers.Authorization = 'Bearer token'; // this will be used for subsequent queries
-    setQueryHeaders(headers);
+    // this should also be done mostly in the layout that contains the authenticated views of the app
+    // for instance in AuthLayout, so that after login in the authToken can still be used to authenticate future request
+    // when user refreshes the page
+    setQueryHeaders({ Authorization: `Bearer ${authToken}` });
   }, []);
 
   return <>{/** codes */}</>;
@@ -133,27 +180,16 @@ The `useGetRequest` hook returns an object with the following properties:
 import { useGetRequest } from '@ventlio/tanstack-query';
 
 const MyComponent = () => {
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    updatePath,
-    nextPage,
-    prevPage,
-    get,
-    gotoPage,
-    page,
-    queryKey,
-  } = useGetRequest({
-    path: '/api/mydata',
-    load: true,
-    queryOptions: {
-      staleTime: 10000,
-      refetchOnWindowFocus: false,
-    },
-    keyTracker: 'mydata',
-  });
+  const { data, isLoading, isError, error, updatePath, nextPage, prevPage, get, gotoPage, page, queryKey } =
+    useGetRequest({
+      path: '/api/mydata',
+      load: true,
+      queryOptions: {
+        staleTime: 10000,
+        refetchOnWindowFocus: false,
+      },
+      keyTracker: 'mydata',
+    });
 
   return (
     <div>
@@ -262,11 +298,10 @@ import { usePatchRequest } from '@ventlio/tanstack-query';
 
 function App() {
   const { patch, isLoading, isError, isSuccess, data } =
-    usePatchRequest <
-    User >
+    usePatchRequest<User>(
     {
       path: '/users/1',
-    };
+    });
 
   const updateUser = async (user: User) => {
     await patch(user);
@@ -419,8 +454,7 @@ import { useKeyTrackerModel } from '@ventlio/tanstack-query';
 2. Call `useKeyTrackerModel` with a `keyTracker` parameter which is a string that uniquely identifies the query key:
 
 ```javascript
-const { refetchQuery, getQueryKey, queryKey, data } =
-  useKeyTrackerModel < MyDataType > 'myKeyTracker';
+const { refetchQuery, getQueryKey, queryKey, data } = useKeyTrackerModel < MyDataType > 'myKeyTracker';
 ```
 
 3. Invoke `getQueryKey` function to retrieve the query key:
@@ -467,8 +501,7 @@ import { useKeyTrackerModel } from '@ventlio/tanstack-query';
 const MyComponent = () => {
   const queryClient = useQueryClient();
 
-  const { refetchQuery, getQueryKey, queryKey, data } =
-    useKeyTrackerModel < MyDataType > 'myKeyTracker';
+  const { refetchQuery, getQueryKey, queryKey, data } = useKeyTrackerModel < MyDataType > 'myKeyTracker';
 
   const handleClick = async () => {
     // Retrieve the query key
