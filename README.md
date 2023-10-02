@@ -17,6 +17,7 @@ But we were not discouraged. So, we set out to find a solution which led to the 
 - [✅] Global settings for requests
 - [✅] Requests context implementations
 - [✅] Post, Get, Patch Requests
+- [✅] Query key tracker to track dynamic query and help fetch query cache from any page
 - [Not Completed] Persistent queries implementation
 - [❌] Put request
 - [❌] Generic return type (this is currently an issue if the API does not return object with the necessary properties required by the library)
