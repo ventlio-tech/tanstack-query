@@ -25,7 +25,15 @@ const config: RollupOptions = {
     },
   ],
   plugins: [resolve(), typescript({ rollupCommonJSResolveHack: false, clean: true }), commonjs(), json()],
-  external: ['react', 'lodash.result', 'lodash.set', 'react-dom', 'axios', '@tanstack/react-query'],
+  external: [
+    'react',
+    'lodash.result',
+    'lodash.set',
+    'react-dom',
+    'axios',
+    '@tanstack/react-query',
+    'url-search-params-polyfill',
+  ],
 };
 
 export default config;
