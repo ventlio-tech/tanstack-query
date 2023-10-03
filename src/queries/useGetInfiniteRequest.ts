@@ -68,6 +68,28 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     }
   };
 
+  /**
+   *
+   * This pagination implementation is currently tied to our use case
+   */
+  const constructPaginationLink = (
+    direction: 'next_page' | 'previous_page',
+    lastPage: IRequestSuccess<
+      TResponse & {
+        pagination: Pagination;
+      }
+    >
+  ) => {
+    const [pathname, queryString] = path.split('?');
+
+    const queryParams = new URLSearchParams(queryString);
+    const lastPageItem = lastPage.data.pagination[direction];
+
+    queryParams.set('page', String(lastPageItem));
+
+    return pathname + '?' + queryParams.toString();
+  };
+
   const query = useInfiniteQuery<any, any, IRequestSuccess<TResponse & { pagination: Pagination }>>(
     [path, {}],
     ({ pageParam = path }) =>
@@ -76,34 +98,11 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       ),
     {
       enabled: load,
-      getNextPageParam: (lastPage, pages) => constructPaginationLink('next_page', lastPage, pages),
-      getPreviousPageParam: (lastPage, pages) => constructPaginationLink('previous_page', lastPage, pages),
+      getNextPageParam: (lastPage) => constructPaginationLink('next_page', lastPage),
+      getPreviousPageParam: (lastPage) => constructPaginationLink('previous_page', lastPage),
       ...(queryOptions as any),
     }
   );
-
-  /**
-   *
-   * This pagination implementation is currently tied to our use case
-   */
-  const constructPaginationLink = (
-    direction: 'next_page' | 'previous_page',
-    lastPage: string,
-    pages: IRequestSuccess<
-      TResponse & {
-        pagination: Pagination;
-      }
-    >[]
-  ) => {
-    const [pathname, queryString] = lastPage.split('?');
-
-    const queryParams = new URLSearchParams(queryString);
-    const lastPageItem = pages[pages.length - 1];
-
-    queryParams.set('page', String(lastPageItem?.data.pagination[direction]));
-
-    return pathname + '?' + queryParams.toString();
-  };
 
   useEffect(() => {
     if (keyTracker) {
