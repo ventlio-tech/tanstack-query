@@ -18,9 +18,11 @@ But we were not discouraged. So, we set out to find a solution which led to the 
 - [✅] Requests context implementations
 - [✅] Post, Get, Patch Requests
 - [✅] Query key tracker to track dynamic query and help fetch query cache from any page
-- [Not Completed] Persistent queries implementation
+- [✅] Persistent queries implementation (Not completed)
 - [❌] Put request
 - [❌] Generic return type (this is currently an issue if the API does not return object with the necessary properties required by the library)
+- [❌] Generic Pagination for any response without infinite queries
+- [❌] Infinite Get Query implementation (still using implementation meant for our use case)
 - [❌] Server sent events
 - [❌] Socket implementations
 - [❌] Tests
@@ -299,10 +301,11 @@ import { usePatchRequest } from '@ventlio/tanstack-query';
 
 function App() {
   const { patch, isLoading, isError, isSuccess, data } =
-    usePatchRequest<User>(
+    usePatchRequest <
+    User >
     {
       path: '/users/1',
-    });
+    };
 
   const updateUser = async (user: User) => {
     await patch(user);

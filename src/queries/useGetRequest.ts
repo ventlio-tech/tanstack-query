@@ -1,4 +1,4 @@
-import type { UseQueryOptions } from '@tanstack/react-query';
+import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import type { RawAxiosRequestHeaders } from '../../node_modules/axios/index';
@@ -37,14 +37,17 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     res: (
       value: IRequestError | IRequestSuccess<TResponse> | PromiseLike<IRequestError | IRequestSuccess<TResponse>>
     ) => void,
-    rej: (reason?: any) => void
+    rej: (reason?: any) => void,
+    queryKey?: QueryKey
   ) => {
     if (load) {
       // get request headers
       const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
+      const [url] = (queryKey ?? []) as string[];
+
       const getResponse = await makeRequest<TResponse>({
-        path: requestPath,
+        path: url ?? requestPath,
         headers: { ...globalHeaders, ...headers },
         baseURL: baseUrl ?? API_URL,
         timeout: TIMEOUT,
@@ -62,7 +65,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
-    () => new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej)),
+    ({ queryKey }) =>
+      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej, queryKey)),
     {
       enabled: load,
       ...options,

@@ -1,4 +1,4 @@
-import type { UseQueryOptions } from '@tanstack/react-query';
+import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
 import { useState } from 'react';
@@ -16,12 +16,14 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
 
   const { getHeaders } = useQueryHeaders();
 
-  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void) => {
+  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, queryKey?: QueryKey) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
+    const [url] = (queryKey ?? []) as string[];
+
     const postResponse = await makeRequest<TResponse>({
-      path: requestPath,
+      path: url ?? requestPath,
       headers: { ...globalHeaders, ...headers },
       method: HttpMethod.DELETE,
       baseURL: baseUrl ?? API_URL,
@@ -37,7 +39,8 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
 
   const query = useQuery<any, any, IRequestSuccess<TResponse>>(
     [requestPath, {}],
-    () => new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej)),
+    ({ queryKey }) =>
+      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej, queryKey)),
     { enabled: false, ...options }
   );
 

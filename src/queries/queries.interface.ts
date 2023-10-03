@@ -1,4 +1,4 @@
-import type { UseQueryOptions } from '@tanstack/react-query';
+import type { UseInfiniteQueryOptions, UseQueryOptions } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
 import type { IRequestError, IRequestSuccess } from '../request';
 
@@ -12,6 +12,13 @@ export interface IPagination {
 }
 
 export type TanstackQueryOption<TResponse> = UseQueryOptions<
+  IRequestSuccess<TResponse | undefined>,
+  IRequestError,
+  IRequestSuccess<TResponse | undefined>,
+  Array<any>
+>;
+
+export type TanstackInfiniteQueryOption<TResponse> = UseInfiniteQueryOptions<
   IRequestSuccess<TResponse | undefined>,
   IRequestError,
   IRequestSuccess<TResponse | undefined>,
