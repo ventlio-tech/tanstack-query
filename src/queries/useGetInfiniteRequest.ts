@@ -26,7 +26,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
 }: {
   path: string;
   load?: boolean;
-  queryOptions?: TanstackInfiniteQueryOption<TResponse>;
+  queryOptions?: TanstackInfiniteQueryOption<TResponse & { pagination: Pagination }>;
   keyTracker?: string;
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
@@ -39,7 +39,10 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
 
   const sendRequest = async (
     res: (
-      value: IRequestError | IRequestSuccess<TResponse> | PromiseLike<IRequestError | IRequestSuccess<TResponse>>
+      value:
+        | IRequestError
+        | IRequestSuccess<TResponse & { pagination: Pagination }>
+        | PromiseLike<IRequestError | IRequestSuccess<TResponse & { pagination: Pagination }>>
     ) => void,
     rej: (reason?: any) => void,
     pageParam?: string
@@ -56,7 +59,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       });
 
       if (getResponse.status) {
-        res(getResponse as IRequestSuccess<TResponse>);
+        res(getResponse as IRequestSuccess<TResponse & { pagination: Pagination }>);
       } else {
         rej(getResponse);
       }
@@ -65,10 +68,12 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     }
   };
 
-  const query = useInfiniteQuery<any, any, IRequestSuccess<TResponse>>(
+  const query = useInfiniteQuery<any, any, IRequestSuccess<TResponse & { pagination: Pagination }>>(
     [path, {}],
     ({ pageParam = path }) =>
-      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej, pageParam)),
+      new Promise<IRequestSuccess<TResponse & { pagination: Pagination }> | IRequestError>((res, rej) =>
+        sendRequest(res, rej, pageParam)
+      ),
     {
       enabled: load,
       getNextPageParam: (lastPage, pages) => constructPaginationLink('next_page', lastPage, pages),
@@ -112,10 +117,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     }
   }, [keyTracker, path, queryClient, queryOptions?.staleTime]);
 
-  const flattenedData = query.data?.pages.flat() ?? [];
-
   return {
     ...query,
-    flattenedData,
   };
 };
