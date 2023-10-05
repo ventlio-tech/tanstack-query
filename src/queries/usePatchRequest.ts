@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
 import { useEnvironmentVariables, useQueryHeaders } from '../config';
 import { scrollToTop } from '../helpers';
+import { useUploadProgress } from '../hooks';
 import { HttpMethod, makeRequest } from '../request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
 import type { TanstackQueryConfig } from '../types';
@@ -10,6 +11,7 @@ import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
+  const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
 
   const { getHeaders } = useQueryHeaders();
   const queryClient = useQueryClient();
@@ -27,6 +29,7 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
+      onUploadProgress,
     });
 
     if (patchResponse.status) {
@@ -59,5 +62,5 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     return mutation.mutateAsync(data, options);
   };
 
-  return { patch, ...mutation };
+  return { patch, uploadProgressPercent, ...mutation };
 };

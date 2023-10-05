@@ -4,6 +4,7 @@ import { useEnvironmentVariables, useQueryHeaders, useReactNativeEnv } from '../
 
 import type { RawAxiosRequestHeaders } from 'axios';
 import { scrollToTop } from '../helpers';
+import { useUploadProgress } from '../hooks';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import type { TanstackQueryConfig } from '../types';
@@ -24,6 +25,8 @@ export const usePostRequest = <TResponse>({
   const queryClient = useQueryClient();
   const { getHeaders } = useQueryHeaders();
   const { isApp } = useReactNativeEnv();
+  const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
+
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, postData: any) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
@@ -41,6 +44,7 @@ export const usePostRequest = <TResponse>({
         isApp,
         fileSelectors,
       },
+      onUploadProgress,
     });
 
     if (postResponse.status) {
@@ -70,5 +74,5 @@ export const usePostRequest = <TResponse>({
     return mutation.mutateAsync(data, options);
   };
 
-  return { post, ...mutation };
+  return { post, uploadProgressPercent, ...mutation };
 };

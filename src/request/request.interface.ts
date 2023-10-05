@@ -1,4 +1,4 @@
-import type { RawAxiosRequestHeaders } from 'axios';
+import type { AxiosProgressEvent, RawAxiosRequestHeaders } from 'axios';
 import type { HttpMethod } from './request.enum';
 
 export interface IMakeRequest {
@@ -10,12 +10,14 @@ export interface IMakeRequest {
   isFormData?: boolean;
   headers: RawAxiosRequestHeaders;
   appFileConfig?: AppFileConfig;
+  onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
 }
 
 export interface AppFileConfig {
   fileSelectors?: string[];
   isApp: boolean;
 }
+
 export interface AxiosInstanceOption {
   bearerToken?: string;
   contentType?: string;

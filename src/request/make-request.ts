@@ -14,6 +14,7 @@ export async function makeRequest<TResponse>({
   baseURL,
   timeout,
   appFileConfig,
+  onUploadProgress,
 }: IMakeRequest) {
   // check if file is included in mobile app environment and extract all file input to avoid
   // it being formatted to object using axios formData builder
@@ -53,6 +54,7 @@ export async function makeRequest<TResponse>({
       url: path,
       method,
       data: body,
+      onUploadProgress,
     });
 
     // get response json
