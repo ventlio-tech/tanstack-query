@@ -1,6 +1,7 @@
+import type { InfiniteData, UseQueryOptions } from '@tanstack/react-query';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
-import { useEffect, useMemo } from 'react';
+import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables, useQueryHeaders } from '../config';
 
 import type { IRequestError, IRequestSuccess } from '../request';
@@ -31,6 +32,9 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { getHeaders } = useQueryHeaders();
+  const [requestPath, updatePath] = useState<string>(path);
+
+  const [options, setOptions] = useState<any>(queryOptions);
 
   let queryClient = useQueryClient();
 
@@ -52,7 +56,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
       const getResponse = await makeRequest<TResponse>({
-        path: pageParam ?? path,
+        path: pageParam ?? requestPath,
         headers: { ...globalHeaders, ...headers },
         baseURL: baseUrl ?? API_URL,
         timeout: TIMEOUT,
@@ -80,7 +84,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       }
     >
   ) => {
-    const [pathname, queryString] = path.split('?');
+    const [pathname, queryString] = requestPath.split('?');
 
     const queryParams = new URLSearchParams(queryString);
     const lastPageItem = lastPage.data.pagination[direction];
@@ -91,8 +95,8 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   };
 
   const query = useInfiniteQuery<any, any, IRequestSuccess<TResponse & { pagination: Pagination }>>(
-    [path, {}],
-    ({ pageParam = path }) =>
+    [requestPath, {}],
+    ({ pageParam = requestPath }) =>
       new Promise<IRequestSuccess<TResponse & { pagination: Pagination }> | IRequestError>((res, rej) =>
         sendRequest(res, rej, pageParam)
       ),
@@ -100,9 +104,45 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       enabled: load,
       getNextPageParam: (lastPage) => constructPaginationLink('next_page', lastPage),
       getPreviousPageParam: (lastPage) => constructPaginationLink('previous_page', lastPage),
-      ...(queryOptions as any),
+      ...options,
     }
   );
+
+  const setOptionsAsync = async (fetchOptions: any) => {
+    startTransition(() => {
+      setOptions(fetchOptions);
+    });
+  };
+
+  const get = async (
+    link: string,
+    fetchOptions?: UseQueryOptions<
+      IRequestSuccess<TResponse | undefined>,
+      IRequestError,
+      IRequestSuccess<TResponse | undefined>,
+      Array<any>
+    >
+  ): Promise<
+    | InfiniteData<
+        IRequestSuccess<
+          TResponse & {
+            pagination: Pagination;
+          }
+        >
+      >
+    | undefined
+  > => {
+    await setOptionsAsync(fetchOptions);
+    await updatedPathAsync(link);
+
+    return query.data;
+  };
+
+  const updatedPathAsync = async (link: string) => {
+    startTransition(() => {
+      updatePath(link);
+    });
+  };
 
   useEffect(() => {
     if (keyTracker) {
@@ -112,11 +152,12 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
         staleTime: Infinity,
       });
 
-      queryClient.setQueryData([keyTracker], [path, {}]);
+      queryClient.setQueryData([keyTracker], [requestPath, {}]);
     }
-  }, [keyTracker, path, queryClient, queryOptions?.staleTime]);
+  }, [keyTracker, requestPath, queryClient, queryOptions?.staleTime]);
 
   return {
+    get,
     ...query,
   };
 };
