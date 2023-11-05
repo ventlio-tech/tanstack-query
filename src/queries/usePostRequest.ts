@@ -5,7 +5,7 @@ import { useEnvironmentVariables, useQueryHeaders, useReactNativeEnv } from '../
 import type { RawAxiosRequestHeaders } from 'axios';
 import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
-import type { IRequestError, IRequestSuccess } from '../request';
+import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import type { TanstackQueryConfig } from '../types';
 import type { DefaultRequestOptions } from './queries.interface';
@@ -27,14 +27,21 @@ export const usePostRequest = <TResponse>({
   const { isApp } = useReactNativeEnv();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
 
-  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, postData: any) => {
+  const sendRequest = async (
+    res: (value: any) => void,
+    rej: (reason?: any) => void,
+    postData: { data: any; requestConfig?: IMakeRequest }
+  ) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
     const config = queryClient.getQueryData<TanstackQueryConfig>(['config']);
+    const { data, requestConfig } = postData;
+
+    delete requestConfig?.body;
 
     const postResponse = await makeRequest<TResponse>({
       path,
-      body: postData,
+      body: data,
       method: HttpMethod.POST,
       isFormData,
       headers: { ...globalHeaders, ...headers },
@@ -45,6 +52,7 @@ export const usePostRequest = <TResponse>({
         fileSelectors,
       },
       onUploadProgress,
+      ...requestConfig,
     });
 
     if (postResponse.status) {
@@ -64,14 +72,25 @@ export const usePostRequest = <TResponse>({
   };
 
   // register post mutation
-  const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
-    async (postData: any) => new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData))
-  );
-  const post = async (
-    data: any,
-    options?: MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown> | undefined
+  const mutation = useMutation<
+    IRequestSuccess<TResponse>,
+    IRequestError,
+    { data: any; requestConfig?: Omit<IMakeRequest, 'body'> }
+  >(async (postData) => new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData)));
+
+  const post = async <T>(
+    data: T,
+    options?:
+      | MutateOptions<
+          IRequestSuccess<TResponse>,
+          IRequestError,
+          { data: T; requestConfig?: Omit<IMakeRequest, 'body'> },
+          unknown
+        >
+      | undefined,
+    requestConfig?: Omit<IMakeRequest, 'body'>
   ): Promise<IRequestSuccess<TResponse>> => {
-    return mutation.mutateAsync(data, options);
+    return mutation.mutateAsync({ data, requestConfig }, options);
   };
 
   return { post, uploadProgressPercent, ...mutation };
