@@ -30,7 +30,7 @@ export const usePostRequest = <TResponse>({
   const sendRequest = async (
     res: (value: any) => void,
     rej: (reason?: any) => void,
-    postData: { data: any; requestConfig?: IMakeRequest }
+    postData: { data: any; requestConfig?: Partial<IMakeRequest> }
   ) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
@@ -75,7 +75,7 @@ export const usePostRequest = <TResponse>({
   const mutation = useMutation<
     IRequestSuccess<TResponse>,
     IRequestError,
-    { data: any; requestConfig?: Omit<IMakeRequest, 'body'> }
+    { data: any; requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
   >(async (postData) => new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData)));
 
   const post = async <T>(
@@ -84,11 +84,11 @@ export const usePostRequest = <TResponse>({
       | MutateOptions<
           IRequestSuccess<TResponse>,
           IRequestError,
-          { data: T; requestConfig?: Omit<IMakeRequest, 'body'> },
+          { data: T; requestConfig?: Partial<Omit<IMakeRequest, 'body'>> },
           unknown
         >
       | undefined,
-    requestConfig?: Omit<IMakeRequest, 'body'>
+    requestConfig?: Partial<Omit<IMakeRequest, 'body'>>
   ): Promise<IRequestSuccess<TResponse>> => {
     return mutation.mutateAsync({ data, requestConfig }, options);
   };

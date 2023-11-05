@@ -1,6 +1,6 @@
 {
   "name": "@ventlio/tanstack-query",
-  "version": "0.2.80",
+  "version": "0.2.81",
   "license": "MIT",
   "main": "dist/index.js",
   "contributors": [
