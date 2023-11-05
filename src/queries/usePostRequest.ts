@@ -80,17 +80,19 @@ export const usePostRequest = <TResponse>({
 
   const post = async <T>(
     data?: T,
-    options?:
+    options?: (
       | MutateOptions<
           IRequestSuccess<TResponse>,
           IRequestError,
           { data: T; requestConfig?: Partial<Omit<IMakeRequest, 'body'>> },
           unknown
         >
-      | undefined,
-    requestConfig?: Partial<Omit<IMakeRequest, 'body'>>
+      | { requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
+      | undefined
+    ) & { requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
   ): Promise<IRequestSuccess<TResponse>> => {
-    return mutation.mutateAsync({ data, requestConfig }, options);
+    const { requestConfig, ...otherOptions } = options ?? {};
+    return mutation.mutateAsync({ data, requestConfig }, otherOptions);
   };
 
   return { post, uploadProgressPercent, ...mutation };
