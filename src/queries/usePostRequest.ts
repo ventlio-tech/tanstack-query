@@ -79,7 +79,7 @@ export const usePostRequest = <TResponse>({
   >(async (postData) => new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData)));
 
   const post = async <T>(
-    data: T,
+    data?: T,
     options?:
       | MutateOptions<
           IRequestSuccess<TResponse>,
