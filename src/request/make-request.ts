@@ -6,7 +6,7 @@ import type { IMakeRequest } from './request.interface';
 import { errorTransformer, successTransformer } from './transformer';
 
 export async function makeRequest<TResponse>({
-  body,
+  body = {},
   method = HttpMethod.GET,
   path,
   isFormData,
