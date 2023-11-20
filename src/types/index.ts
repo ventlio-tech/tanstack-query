@@ -7,6 +7,8 @@ export interface BootstrapConfig {
   };
   context?: ContextType;
   modelConfig?: BootstrapModelConfig;
+  mutationMiddleware?: (mutateRequest?: any, mutateResponse?: any) => Promise<boolean>;
+  queryMiddleware?: (queryRequest?: any, queryResponse?: any) => Promise<boolean>;
 }
 
 export interface BootstrapModelConfig {

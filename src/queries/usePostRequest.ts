@@ -1,13 +1,12 @@
 import type { MutateOptions } from '@tanstack/react-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEnvironmentVariables, useQueryHeaders, useReactNativeEnv } from '../config';
+import { useMutation } from '@tanstack/react-query';
+import { useEnvironmentVariables, useQueryConfig, useQueryHeaders, useReactNativeEnv } from '../config';
 
 import type { RawAxiosRequestHeaders } from 'axios';
 import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
-import type { TanstackQueryConfig } from '../types';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePostRequest = <TResponse>({
@@ -22,7 +21,9 @@ export const usePostRequest = <TResponse>({
   fileSelectors?: string[];
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const queryClient = useQueryClient();
+
+  const config = useQueryConfig();
+
   const { getHeaders } = useQueryHeaders();
   const { isApp } = useReactNativeEnv();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
@@ -34,7 +35,7 @@ export const usePostRequest = <TResponse>({
   ) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
-    const config = queryClient.getQueryData<TanstackQueryConfig>(['config']);
+
     const { data, requestConfig } = postData;
 
     delete requestConfig?.body;
@@ -58,13 +59,13 @@ export const usePostRequest = <TResponse>({
     if (postResponse.status) {
       // scroll to top after success
 
-      if (config?.options?.context !== 'app') {
+      if (config.options?.context !== 'app') {
         scrollToTop();
       }
       res(postResponse as IRequestSuccess<TResponse>);
     } else {
       // scroll to top after error
-      if (config?.options?.context !== 'app') {
+      if (config.options?.context !== 'app') {
         scrollToTop();
       }
       rej(postResponse);
@@ -76,7 +77,9 @@ export const usePostRequest = <TResponse>({
     IRequestSuccess<TResponse>,
     IRequestError,
     { data: any; requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
-  >(async (postData) => new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData)));
+  >(async (postData) => new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData)), {
+    mutationKey: [path, { type: 'mutation' }],
+  });
 
   const post = async <T>(
     data?: T,

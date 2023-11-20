@@ -1,33 +1,27 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { getDateInFuture } from '../helpers';
 import type { IUseQueryHeaders, TanstackQueryConfig } from '../types';
+import { useQueryConfig } from './useQueryConfig';
 
 export const useQueryHeaders = (): IUseQueryHeaders => {
   const queryClient = useQueryClient();
+  const { headers, options } = useQueryConfig();
 
   const getHeaders = (): TanstackQueryConfig['headers'] => {
-    const config = queryClient.getQueryData(['config']) as TanstackQueryConfig;
-    return config.headers;
+    return headers;
   };
 
   const setQueryHeaders = (newHeaders: TanstackQueryConfig['headers']) => {
-    // make sure the config does not expire
-    queryClient.setQueryDefaults(['config'], {
-      staleTime: Infinity,
-      cacheTime: Infinity,
-    });
+    const defaultMeta = {
+      headers: { ...headers, ...newHeaders },
+      options,
+    };
 
-    // set the config
-    queryClient.setQueryData<TanstackQueryConfig>(
-      ['config'],
-      (config): TanstackQueryConfig => {
-        const newConfig = { ...config, headers: newHeaders };
-        return newConfig;
+    queryClient.setDefaultOptions({
+      queries: {
+        meta: defaultMeta,
       },
-      {
-        updatedAt: getDateInFuture(2),
-      }
-    );
+      mutations: { meta: defaultMeta },
+    });
   };
 
   return { setQueryHeaders, getHeaders };

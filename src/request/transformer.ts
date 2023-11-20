@@ -3,11 +3,10 @@ import type { IRequestError, IRequestSuccess, IServerRequestError, IServerReques
 //
 export const errorTransformer = (data: IServerRequestError & { statusCode: number }): IRequestError => {
   return {
-    message: data.message,
-    statusCode: data.statusCode,
     timeStamp: new Date(),
     status: false,
     data: data.data,
+    ...data,
   };
 };
 
