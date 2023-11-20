@@ -1,4 +1,6 @@
+import type { QueryKey } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
+import type { IMakeRequest } from '../request';
 
 export interface BootstrapConfig {
   environments?: {
@@ -7,8 +9,8 @@ export interface BootstrapConfig {
   };
   context?: ContextType;
   modelConfig?: BootstrapModelConfig;
-  mutationMiddleware?: (mutateRequest?: any, mutateResponse?: any) => Promise<boolean>;
-  queryMiddleware?: (queryRequest?: any, queryResponse?: any) => Promise<boolean>;
+  mutationMiddleware?: (mutateRequestConfig?: IMakeRequest & { mutationKey: QueryKey }) => Promise<boolean>;
+  queryMiddleware?: (queryRequestConfig?: IMakeRequest & { queryKey: QueryKey }) => Promise<boolean>;
 }
 
 export interface BootstrapModelConfig {

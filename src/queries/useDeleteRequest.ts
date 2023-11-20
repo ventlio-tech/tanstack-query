@@ -2,38 +2,52 @@ import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
 import { useState } from 'react';
-import { useEnvironmentVariables, useQueryHeaders } from '../config';
+import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
-import { HttpMethod, makeRequest } from '../request';
+import { makeRequest } from '../request';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOptions) => {
   const { baseUrl, headers } = deleteOptions ?? {};
-  const [requestPath, updateDeletePath] = useState<string>('');
+  const [requestPath, setRequestPath] = useState<string>('');
   const [options, setOptions] = useState<any>();
+
+  const { options: queryConfigOptions } = useQueryConfig();
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
   const { getHeaders } = useQueryHeaders();
 
-  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, queryKey?: QueryKey) => {
+  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, queryKey: QueryKey) => {
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
-    const [url] = (queryKey ?? []) as string[];
+    const [url] = queryKey;
+    const requestUrl = (url ?? requestPath) as string;
 
-    const postResponse = await makeRequest<TResponse>({
-      path: url ?? requestPath,
+    const requestOptions = {
+      path: requestUrl,
       headers: { ...globalHeaders, ...headers },
-      method: HttpMethod.DELETE,
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
-    });
+    };
 
-    if (postResponse.status) {
-      res(postResponse as IRequestSuccess<TResponse>);
+    let shouldContinue = true;
+
+    if (queryConfigOptions?.queryMiddleware) {
+      shouldContinue = await queryConfigOptions.queryMiddleware({ queryKey, ...requestOptions });
+    }
+
+    if (shouldContinue) {
+      const postResponse = await makeRequest<TResponse>(requestOptions);
+
+      if (postResponse.status) {
+        res(postResponse as IRequestSuccess<TResponse>);
+      } else {
+        rej(postResponse);
+      }
     } else {
-      rej(postResponse);
+      rej(null);
     }
   };
 
@@ -45,7 +59,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
   );
 
   const updatedPathAsync = async (link: string) => {
-    return updateDeletePath(link);
+    return setRequestPath(link);
   };
 
   const setOptionsAsync = async (fetchOptions: any) => {

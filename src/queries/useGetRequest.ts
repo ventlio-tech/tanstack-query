@@ -2,7 +2,7 @@ import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import type { RawAxiosRequestHeaders } from '../../node_modules/axios/index';
-import { useEnvironmentVariables, useQueryHeaders } from '../config';
+import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
 
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
@@ -21,12 +21,13 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   queryOptions?: TanstackQueryOption<TResponse>;
   keyTracker?: string;
 } & DefaultRequestOptions) => {
-  const [requestPath, updatePath] = useState<string>(path);
+  const [requestPath, setRequestPath] = useState<string>(path);
   const [options, setOptions] = useState<any>(queryOptions);
   const [page, setPage] = useState<number>(1);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { getHeaders } = useQueryHeaders();
+  const { options: queryConfigOptions } = useQueryConfig();
 
   let queryClient = useQueryClient();
 
@@ -38,25 +39,38 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       value: IRequestError | IRequestSuccess<TResponse> | PromiseLike<IRequestError | IRequestSuccess<TResponse>>
     ) => void,
     rej: (reason?: any) => void,
-    queryKey?: QueryKey
+    queryKey: QueryKey
   ) => {
     if (load) {
       // get request headers
       const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
-      const [url] = (queryKey ?? []) as string[];
+      const [url] = queryKey;
+      const requestUrl = (url ?? requestPath) as string;
 
-      const getResponse = await makeRequest<TResponse>({
-        path: url ?? requestPath,
+      const requestOptions = {
+        path: requestUrl,
         headers: { ...globalHeaders, ...headers },
         baseURL: baseUrl ?? API_URL,
         timeout: TIMEOUT,
-      });
+      };
 
-      if (getResponse.status) {
-        res(getResponse as IRequestSuccess<TResponse>);
+      let shouldContinue = true;
+
+      if (queryConfigOptions?.queryMiddleware) {
+        shouldContinue = await queryConfigOptions.queryMiddleware({ queryKey, ...requestOptions });
+      }
+
+      if (shouldContinue) {
+        const getResponse = await makeRequest<TResponse>(requestOptions);
+
+        if (getResponse.status) {
+          res(getResponse as IRequestSuccess<TResponse>);
+        } else {
+          rej(getResponse);
+        }
       } else {
-        rej(getResponse);
+        rej(null);
       }
     } else {
       res(null as any);
@@ -75,7 +89,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   useEffect(() => {
     if (path) {
-      updatePath(path);
+      setRequestPath(path);
     }
   }, [path]);
 
@@ -95,7 +109,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     if (query.data?.data.pagination) {
       const pagination: IPagination = query.data.data.pagination;
       if (pagination.next_page !== pagination.current_page && pagination.next_page > pagination.current_page) {
-        updatePath(constructPaginationLink(requestPath, pagination.next_page));
+        setRequestPath(constructPaginationLink(requestPath, pagination.next_page));
       }
     }
   };
@@ -104,7 +118,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     if (query.data?.data.pagination) {
       const pagination: IPagination = query.data.data.pagination;
       if (pagination.previous_page !== pagination.current_page && pagination.previous_page < pagination.current_page) {
-        updatePath(constructPaginationLink(requestPath, pagination.previous_page));
+        setRequestPath(constructPaginationLink(requestPath, pagination.previous_page));
       }
     }
   };
@@ -127,12 +141,12 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   };
 
   const gotoPage = (pageNumber: number) => {
-    updatePath(constructPaginationLink(requestPath, pageNumber));
+    setRequestPath(constructPaginationLink(requestPath, pageNumber));
   };
 
   const updatedPathAsync = async (link: string) => {
     startTransition(() => {
-      updatePath(link);
+      setRequestPath(link);
     });
   };
 
@@ -159,7 +173,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   return {
     ...query,
-    updatePath,
+    setRequestPath,
     nextPage,
     prevPage,
     get,

@@ -40,7 +40,7 @@ export const usePostRequest = <TResponse>({
 
     delete requestConfig?.body;
 
-    const postResponse = await makeRequest<TResponse>({
+    const requestOptions = {
       path,
       body: data,
       method: HttpMethod.POST,
@@ -54,21 +54,36 @@ export const usePostRequest = <TResponse>({
       },
       onUploadProgress,
       ...requestConfig,
-    });
+    };
 
-    if (postResponse.status) {
-      // scroll to top after success
+    let shouldContinue = true;
 
-      if (config.options?.context !== 'app') {
-        scrollToTop();
+    if (config.options?.mutationMiddleware) {
+      shouldContinue = await config.options.mutationMiddleware({
+        mutationKey: [path, { type: 'mutation' }],
+        ...requestOptions,
+      });
+    }
+
+    if (shouldContinue) {
+      const postResponse = await makeRequest<TResponse>(requestOptions);
+
+      if (postResponse.status) {
+        // scroll to top after success
+
+        if (config.options?.context !== 'app') {
+          scrollToTop();
+        }
+        res(postResponse as IRequestSuccess<TResponse>);
+      } else {
+        // scroll to top after error
+        if (config.options?.context !== 'app') {
+          scrollToTop();
+        }
+        rej(postResponse);
       }
-      res(postResponse as IRequestSuccess<TResponse>);
     } else {
-      // scroll to top after error
-      if (config.options?.context !== 'app') {
-        scrollToTop();
-      }
-      rej(postResponse);
+      rej(null);
     }
   };
 

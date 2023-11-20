@@ -20,7 +20,7 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     // get request headers
     const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
-    const patchResponse = await makeRequest<TResponse>({
+    const requestOptions = {
       path: path,
       body: data,
       method: HttpMethod.PATCH,
@@ -28,20 +28,34 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
       onUploadProgress,
-    });
+    };
 
-    if (patchResponse.status) {
-      // scroll to top after success
-      if (config.options?.context !== 'app') {
-        scrollToTop();
+    let shouldContinue = true;
+
+    if (config.options?.mutationMiddleware) {
+      shouldContinue = await config.options.mutationMiddleware({
+        mutationKey: [path, { type: 'mutation' }],
+        ...requestOptions,
+      });
+    }
+
+    if (shouldContinue) {
+      const patchResponse = await makeRequest<TResponse>(requestOptions);
+      if (patchResponse.status) {
+        // scroll to top after success
+        if (config.options?.context !== 'app') {
+          scrollToTop();
+        }
+        res(patchResponse as IRequestSuccess<TResponse>);
+      } else {
+        // scroll to top after error
+        if (config.options?.context !== 'app') {
+          scrollToTop();
+        }
+        rej(patchResponse);
       }
-      res(patchResponse as IRequestSuccess<TResponse>);
     } else {
-      // scroll to top after error
-      if (config.options?.context !== 'app') {
-        scrollToTop();
-      }
-      rej(patchResponse);
+      rej(null);
     }
   };
 
@@ -50,7 +64,8 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     (dataData: any) =>
       new Promise<IRequestSuccess<TResponse>>((res, rej) => {
         return sendRequest(res, rej, dataData);
-      })
+      }),
+    { mutationKey: [path, { type: 'mutation' }] }
   );
 
   const patch = async (
