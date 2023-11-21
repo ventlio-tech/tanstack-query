@@ -4,7 +4,11 @@ export const useKeyTrackerModel = <T>(keyTracker: string) => {
   const queryClient = useQueryClient();
 
   const getQueryKey = (innerKeyTracker?: string) => {
-    const queryKey: any[] | undefined = queryClient.getQueryData([innerKeyTracker ?? keyTracker]);
+    const meta = {
+      ...queryClient.getDefaultOptions().mutations?.meta,
+      ...queryClient.getDefaultOptions().queries?.meta,
+    };
+    const queryKey: any[] | undefined = meta[innerKeyTracker ?? keyTracker] as any[];
 
     return queryKey;
   };

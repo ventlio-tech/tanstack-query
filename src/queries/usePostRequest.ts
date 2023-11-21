@@ -2,7 +2,7 @@ import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import { useEnvironmentVariables, useQueryConfig, useQueryHeaders, useReactNativeEnv } from '../config';
 
-import type { RawAxiosRequestHeaders } from 'axios';
+import { useEffect, useState } from 'react';
 import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
@@ -23,6 +23,7 @@ export const usePostRequest = <TResponse>({
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
   const config = useQueryConfig();
+  const [mutationConfig, setMutationConfig] = useState<{ data: any; options: any }>();
 
   const { getHeaders } = useQueryHeaders();
   const { isApp } = useReactNativeEnv();
@@ -34,7 +35,7 @@ export const usePostRequest = <TResponse>({
     postData: { data: any; requestConfig?: Partial<IMakeRequest> }
   ) => {
     // get request headers
-    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+    const globalHeaders = getHeaders();
 
     const { data, requestConfig } = postData;
 
@@ -58,7 +59,7 @@ export const usePostRequest = <TResponse>({
 
     let shouldContinue = true;
 
-    if (config.options?.mutationMiddleware) {
+    if (config.options.mutationMiddleware) {
       shouldContinue = await config.options.mutationMiddleware({
         mutationKey: [path, { type: 'mutation' }],
         ...requestOptions,
@@ -71,13 +72,13 @@ export const usePostRequest = <TResponse>({
       if (postResponse.status) {
         // scroll to top after success
 
-        if (config.options?.context !== 'app') {
+        if (config.options.context !== 'app') {
           scrollToTop();
         }
         res(postResponse as IRequestSuccess<TResponse>);
       } else {
         // scroll to top after error
-        if (config.options?.context !== 'app') {
+        if (config.options.context !== 'app') {
           scrollToTop();
         }
         rej(postResponse);
@@ -108,10 +109,23 @@ export const usePostRequest = <TResponse>({
       | { requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
       | undefined
     ) & { requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
-  ): Promise<IRequestSuccess<TResponse>> => {
-    const { requestConfig, ...otherOptions } = options ?? {};
-    return mutation.mutateAsync({ data, requestConfig }, otherOptions);
+  ): Promise<IRequestSuccess<TResponse> | undefined> => {
+    if (!config.options.pauseFutureMutations) {
+      const { requestConfig, ...otherOptions } = options ?? {};
+      return mutation.mutateAsync({ data, requestConfig }, otherOptions);
+    } else {
+      setMutationConfig({ data, options });
+      return undefined;
+    }
   };
+
+  useEffect(() => {
+    if (!config.options.pauseFutureMutations && mutationConfig) {
+      post(mutationConfig.data, mutationConfig.options);
+      setMutationConfig(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.options.pauseFutureMutations]);
 
   return { post, uploadProgressPercent, ...mutation };
 };

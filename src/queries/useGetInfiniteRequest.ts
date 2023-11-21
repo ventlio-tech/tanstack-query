@@ -1,6 +1,5 @@
 import type { InfiniteData, QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import type { RawAxiosRequestHeaders } from 'axios';
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
 
@@ -33,9 +32,10 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { getHeaders } = useQueryHeaders();
   const [requestPath, setRequestPath] = useState<string>(path);
+  const [queryConfig, setQueryConfig] = useState<{ link: string; fetchOptions: any }>();
 
   const [options, setOptions] = useState<any>(queryOptions);
-  const { options: queryConfigOptions } = useQueryConfig();
+  const { options: queryConfigOptions, setConfig } = useQueryConfig();
 
   let queryClient = useQueryClient();
 
@@ -55,7 +55,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   ) => {
     if (load) {
       // get request headers
-      const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+      const globalHeaders = getHeaders();
 
       const requestOptions = {
         path: pageParam ?? requestPath,
@@ -66,7 +66,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
 
       let shouldContinue = true;
 
-      if (queryConfigOptions?.queryMiddleware) {
+      if (queryConfigOptions.queryMiddleware) {
         shouldContinue = await queryConfigOptions.queryMiddleware({ queryKey, ...requestOptions });
       }
 
@@ -115,7 +115,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
         sendRequest(res, rej, queryKey, pageParam)
       ),
     {
-      enabled: load,
+      enabled: load || !queryConfigOptions.pauseFutureQueries,
       getNextPageParam: (lastPage) => constructPaginationLink('next_page', lastPage),
       getPreviousPageParam: (lastPage) => constructPaginationLink('previous_page', lastPage),
       ...options,
@@ -146,10 +146,16 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       >
     | undefined
   > => {
-    await setOptionsAsync(fetchOptions);
-    await updatedPathAsync(link);
+    if (!queryConfigOptions.pauseFutureQueries) {
+      await setOptionsAsync(fetchOptions);
+      await updatedPathAsync(link);
 
-    return query.data;
+      return query.data;
+    } else {
+      setQueryConfig({ link, fetchOptions });
+
+      return undefined;
+    }
   };
 
   const updatedPathAsync = async (link: string) => {
@@ -160,18 +166,22 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
 
   useEffect(() => {
     if (keyTracker) {
-      // set expiration time for the tracker
-      queryClient.setQueryDefaults([keyTracker], {
-        cacheTime: Infinity,
-        staleTime: Infinity,
-      });
-
-      queryClient.setQueryData([keyTracker], [requestPath, {}]);
+      setConfig({ [keyTracker]: [requestPath, {}] });
     }
-  }, [keyTracker, requestPath, queryClient, queryOptions?.staleTime]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyTracker, requestPath]);
+
+  useEffect(() => {
+    if (!queryConfigOptions.pauseFutureQueries && queryConfig) {
+      get(queryConfig.link, queryConfig.fetchOptions);
+      setQueryConfig(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryConfigOptions.pauseFutureQueries]);
 
   return {
     get,
     ...query,
+    isLoading: query.isLoading || queryConfigOptions.pauseFutureQueries,
   };
 };

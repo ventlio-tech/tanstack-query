@@ -1,7 +1,6 @@
 import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
-import type { RawAxiosRequestHeaders } from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
@@ -11,6 +10,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
   const { baseUrl, headers } = deleteOptions ?? {};
   const [requestPath, setRequestPath] = useState<string>('');
   const [options, setOptions] = useState<any>();
+  const [destroyConfig, setDestroyConfig] = useState<{ link: string; internalDeleteOptions: any }>();
 
   const { options: queryConfigOptions } = useQueryConfig();
 
@@ -20,7 +20,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, queryKey: QueryKey) => {
     // get request headers
-    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+    const globalHeaders = getHeaders();
 
     const [url] = queryKey;
     const requestUrl = (url ?? requestPath) as string;
@@ -34,7 +34,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
 
     let shouldContinue = true;
 
-    if (queryConfigOptions?.queryMiddleware) {
+    if (queryConfigOptions.queryMiddleware) {
       shouldContinue = await queryConfigOptions.queryMiddleware({ queryKey, ...requestOptions });
     }
 
@@ -75,15 +75,29 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
       Array<any>
     > & { cached?: boolean }
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
-    // set enabled to be true for every delete
-    internalDeleteOptions = internalDeleteOptions ?? {};
-    internalDeleteOptions.enabled = true;
+    if (!queryConfigOptions.pauseFutureQueries) {
+      // set enabled to be true for every delete
+      internalDeleteOptions = internalDeleteOptions ?? {};
+      internalDeleteOptions.enabled = true;
 
-    await setOptionsAsync(internalDeleteOptions);
-    await updatedPathAsync(link);
+      await setOptionsAsync(internalDeleteOptions);
+      await updatedPathAsync(link);
 
-    return query.data;
+      return query.data;
+    } else {
+      // save delete config
+      setDestroyConfig({ link, internalDeleteOptions });
+      return undefined;
+    }
   };
 
-  return { destroy, ...query };
+  useEffect(() => {
+    if (!queryConfigOptions.pauseFutureQueries && destroyConfig) {
+      destroy(destroyConfig.link, destroyConfig.internalDeleteOptions);
+      setDestroyConfig(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryConfigOptions.pauseFutureQueries]);
+
+  return { destroy, ...query, isLoading: query.isLoading || queryConfigOptions.pauseFutureQueries };
 };

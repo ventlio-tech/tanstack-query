@@ -11,6 +11,9 @@ export interface BootstrapConfig {
   modelConfig?: BootstrapModelConfig;
   mutationMiddleware?: (mutateRequestConfig?: IMakeRequest & { mutationKey: QueryKey }) => Promise<boolean>;
   queryMiddleware?: (queryRequestConfig?: IMakeRequest & { queryKey: QueryKey }) => Promise<boolean>;
+  pauseFutureMutations?: boolean;
+  pauseFutureQueries?: boolean;
+  headers?: RawAxiosRequestHeaders;
 }
 
 export interface BootstrapModelConfig {
@@ -19,11 +22,11 @@ export interface BootstrapModelConfig {
 
 export type ContextType = 'app' | 'web' | 'electronjs';
 export interface TanstackQueryConfig {
-  headers: RawAxiosRequestHeaders;
-  options?: BootstrapConfig;
+  options: BootstrapConfig;
+  setConfig: (options: BootstrapConfig) => void;
 }
 
 export interface IUseQueryHeaders {
-  getHeaders: () => TanstackQueryConfig['headers'];
-  setQueryHeaders: (header: TanstackQueryConfig['headers']) => void;
+  getHeaders: () => BootstrapConfig['headers'];
+  setQueryHeaders: (header: BootstrapConfig['headers']) => void;
 }

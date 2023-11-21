@@ -1,27 +1,15 @@
-import { useQueryClient } from '@tanstack/react-query';
-import type { IUseQueryHeaders, TanstackQueryConfig } from '../types';
+import type { BootstrapConfig, IUseQueryHeaders } from '../types';
 import { useQueryConfig } from './useQueryConfig';
 
 export const useQueryHeaders = (): IUseQueryHeaders => {
-  const queryClient = useQueryClient();
-  const { headers, options } = useQueryConfig();
+  const { setConfig, ...config } = useQueryConfig();
 
-  const getHeaders = (): TanstackQueryConfig['headers'] => {
-    return headers;
+  const getHeaders = (): BootstrapConfig['headers'] => {
+    return config.options?.headers;
   };
 
-  const setQueryHeaders = (newHeaders: TanstackQueryConfig['headers']) => {
-    const defaultMeta = {
-      headers: { ...headers, ...newHeaders },
-      options,
-    };
-
-    queryClient.setDefaultOptions({
-      queries: {
-        meta: defaultMeta,
-      },
-      mutations: { meta: defaultMeta },
-    });
+  const setQueryHeaders = (headers: BootstrapConfig['headers']) => {
+    setConfig({ headers });
   };
 
   return { setQueryHeaders, getHeaders };

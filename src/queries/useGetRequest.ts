@@ -1,7 +1,6 @@
 import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
-import type { RawAxiosRequestHeaders } from '../../node_modules/axios/index';
 import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
 
 import type { IRequestError, IRequestSuccess } from '../request';
@@ -27,7 +26,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { getHeaders } = useQueryHeaders();
-  const { options: queryConfigOptions } = useQueryConfig();
+  const { options: queryConfigOptions, setConfig } = useQueryConfig();
+  const [queryConfig, setQueryConfig] = useState<{ link: string; fetchOptions: any }>();
 
   let queryClient = useQueryClient();
 
@@ -43,7 +43,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   ) => {
     if (load) {
       // get request headers
-      const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+      const globalHeaders = getHeaders();
 
       const [url] = queryKey;
       const requestUrl = (url ?? requestPath) as string;
@@ -57,7 +57,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
       let shouldContinue = true;
 
-      if (queryConfigOptions?.queryMiddleware) {
+      if (queryConfigOptions.queryMiddleware) {
         shouldContinue = await queryConfigOptions.queryMiddleware({ queryKey, ...requestOptions });
       }
 
@@ -95,15 +95,10 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   useEffect(() => {
     if (keyTracker) {
-      // set expiration time for the tracker
-      queryClient.setQueryDefaults([keyTracker], {
-        cacheTime: Infinity,
-        staleTime: Infinity,
-      });
-
-      queryClient.setQueryData([keyTracker], [requestPath, {}]);
+      setConfig({ [keyTracker]: [requestPath, {}] });
     }
-  }, [keyTracker, requestPath, queryClient, queryOptions?.staleTime]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyTracker, requestPath]);
 
   const nextPage = () => {
     if (query.data?.data.pagination) {
@@ -165,14 +160,29 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       Array<any>
     >
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
-    await setOptionsAsync(fetchOptions);
-    await updatedPathAsync(link);
+    if (!queryConfigOptions.pauseFutureQueries) {
+      await setOptionsAsync(fetchOptions);
+      await updatedPathAsync(link);
 
-    return query.data;
+      return query.data;
+    } else {
+      setQueryConfig({ link, fetchOptions });
+
+      return undefined;
+    }
   };
+
+  useEffect(() => {
+    if (!queryConfigOptions.pauseFutureQueries && queryConfig) {
+      get(queryConfig.link, queryConfig.fetchOptions);
+      setQueryConfig(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryConfigOptions.pauseFutureQueries]);
 
   return {
     ...query,
+    isLoading: query.isLoading || queryConfigOptions.pauseFutureQueries,
     setRequestPath,
     nextPage,
     prevPage,
