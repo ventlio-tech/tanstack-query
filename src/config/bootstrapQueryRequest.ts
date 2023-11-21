@@ -10,7 +10,7 @@ export const bootstrapQueryRequest = (queryClient: QueryClient, options?: Bootst
     headers: {
       Authorization: ``,
     },
-    options,
+    ...options,
   };
 
   queryClient.setDefaultOptions({
