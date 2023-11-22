@@ -1,5 +1,4 @@
 export * from './config';
-export * from './env.d';
 export * from './helpers';
 export * from './hooks';
 export * from './model';
