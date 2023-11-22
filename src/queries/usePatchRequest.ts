@@ -1,16 +1,22 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
+import { useEffect, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
 import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import { HttpMethod, makeRequest } from '../request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
+import { usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
+
+  const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
+
+  const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
 
   const { getHeaders } = useQueryHeaders();
 
@@ -71,9 +77,22 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
   const patch = async (
     data: any,
     options?: MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown> | undefined
-  ): Promise<IRequestSuccess<TResponse>> => {
-    return mutation.mutateAsync(data, options);
+  ): Promise<IRequestSuccess<TResponse> | undefined> => {
+    if (!isFutureMutationsPaused) {
+      return mutation.mutateAsync(data, options);
+    } else {
+      setRequestPayload({ data, options });
+      return undefined;
+    }
   };
 
-  return { patch, uploadProgressPercent, ...mutation };
+  useEffect(() => {
+    if (!isFutureMutationsPaused && requestPayload) {
+      patch(requestPayload.data, requestPayload.options);
+      setRequestPayload(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFutureMutationsPaused]);
+
+  return { patch, uploadProgressPercent, ...mutation, isLoading: mutation.isLoading || isFutureMutationsPaused };
 };

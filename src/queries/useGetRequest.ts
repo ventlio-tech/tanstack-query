@@ -6,6 +6,7 @@ import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../con
 
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
+import { usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions, IPagination, TanstackQueryOption } from './queries.interface';
 
 export const useGetRequest = <TResponse extends Record<string, any>>({
@@ -28,6 +29,9 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { getHeaders } = useQueryHeaders();
   const { options: queryConfigOptions } = useQueryConfig();
+  const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
+
+  const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
 
   let queryClient = useQueryClient();
 
@@ -82,7 +86,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     ({ queryKey }) =>
       new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej, queryKey)),
     {
-      enabled: load,
+      enabled: load && !isFutureQueriesPaused,
       ...options,
     }
   );
@@ -165,14 +169,28 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       Array<any>
     >
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
-    await setOptionsAsync(fetchOptions);
-    await updatedPathAsync(link);
+    if (!isFutureQueriesPaused) {
+      await setOptionsAsync(fetchOptions);
+      await updatedPathAsync(link);
 
-    return query.data;
+      return query.data;
+    } else {
+      setRequestPayload({ link, fetchOptions });
+      return undefined;
+    }
   };
+
+  useEffect(() => {
+    if (!isFutureQueriesPaused && requestPayload) {
+      get(requestPayload.link, requestPayload.fetchOptions);
+      setRequestPayload(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFutureQueriesPaused]);
 
   return {
     ...query,
+    isLoading: query.isLoading || isFutureQueriesPaused,
     setRequestPath,
     nextPage,
     prevPage,

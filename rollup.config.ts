@@ -31,6 +31,7 @@ const config: RollupOptions = {
     'lodash.set',
     'react-dom',
     'axios',
+    'zustand',
     '@tanstack/react-query',
     'url-search-params-polyfill',
   ],

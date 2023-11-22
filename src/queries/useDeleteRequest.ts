@@ -1,10 +1,11 @@
 import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import type { RawAxiosRequestHeaders } from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
+import { usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOptions) => {
@@ -13,6 +14,9 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
   const [options, setOptions] = useState<any>();
 
   const { options: queryConfigOptions } = useQueryConfig();
+  const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
+
+  const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
@@ -75,15 +79,28 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
       Array<any>
     > & { cached?: boolean }
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
-    // set enabled to be true for every delete
-    internalDeleteOptions = internalDeleteOptions ?? {};
-    internalDeleteOptions.enabled = true;
+    if (!isFutureQueriesPaused) {
+      // set enabled to be true for every delete
+      internalDeleteOptions = internalDeleteOptions ?? {};
+      internalDeleteOptions.enabled = true;
 
-    await setOptionsAsync(internalDeleteOptions);
-    await updatedPathAsync(link);
+      await setOptionsAsync(internalDeleteOptions);
+      await updatedPathAsync(link);
 
-    return query.data;
+      return query.data;
+    } else {
+      setRequestPayload({ link, internalDeleteOptions });
+      return undefined;
+    }
   };
 
-  return { destroy, ...query };
+  useEffect(() => {
+    if (!isFutureQueriesPaused && requestPayload) {
+      destroy(requestPayload.link, requestPayload.internalDeleteOptions);
+      setRequestPayload(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFutureQueriesPaused]);
+
+  return { destroy, ...query, isLoading: query.isLoading || isFutureQueriesPaused };
 };

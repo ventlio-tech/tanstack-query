@@ -6,6 +6,7 @@ import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../con
 
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
+import { usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions, TanstackInfiniteQueryOption } from './queries.interface';
 
 interface Pagination {
@@ -36,6 +37,9 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
 
   const [options, setOptions] = useState<any>(queryOptions);
   const { options: queryConfigOptions } = useQueryConfig();
+  const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
+
+  const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
 
   let queryClient = useQueryClient();
 
@@ -115,7 +119,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
         sendRequest(res, rej, queryKey, pageParam)
       ),
     {
-      enabled: load,
+      enabled: load && !isFutureQueriesPaused,
       getNextPageParam: (lastPage) => constructPaginationLink('next_page', lastPage),
       getPreviousPageParam: (lastPage) => constructPaginationLink('previous_page', lastPage),
       ...options,
@@ -146,11 +150,24 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       >
     | undefined
   > => {
-    await setOptionsAsync(fetchOptions);
-    await updatedPathAsync(link);
+    if (!isFutureQueriesPaused) {
+      await setOptionsAsync(fetchOptions);
+      await updatedPathAsync(link);
 
-    return query.data;
+      return query.data;
+    } else {
+      setRequestPayload({ link, fetchOptions });
+      return undefined;
+    }
   };
+
+  useEffect(() => {
+    if (!isFutureQueriesPaused && requestPayload) {
+      get(requestPayload.link, requestPayload.fetchOptions);
+      setRequestPayload(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFutureQueriesPaused]);
 
   const updatedPathAsync = async (link: string) => {
     startTransition(() => {
@@ -173,5 +190,6 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   return {
     get,
     ...query,
+    isLoading: query.isLoading || isFutureQueriesPaused,
   };
 };

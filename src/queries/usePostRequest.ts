@@ -3,10 +3,12 @@ import { useMutation } from '@tanstack/react-query';
 import { useEnvironmentVariables, useQueryConfig, useQueryHeaders, useReactNativeEnv } from '../config';
 
 import type { RawAxiosRequestHeaders } from 'axios';
+import { useEffect, useState } from 'react';
 import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
+import { usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePostRequest = <TResponse>({
@@ -27,6 +29,9 @@ export const usePostRequest = <TResponse>({
   const { getHeaders } = useQueryHeaders();
   const { isApp } = useReactNativeEnv();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
+  const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
+
+  const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
 
   const sendRequest = async (
     res: (value: any) => void,
@@ -108,10 +113,23 @@ export const usePostRequest = <TResponse>({
       | { requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
       | undefined
     ) & { requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
-  ): Promise<IRequestSuccess<TResponse>> => {
-    const { requestConfig, ...otherOptions } = options ?? {};
-    return mutation.mutateAsync({ data, requestConfig }, otherOptions);
+  ): Promise<IRequestSuccess<TResponse> | undefined> => {
+    if (!isFutureMutationsPaused) {
+      const { requestConfig, ...otherOptions } = options ?? {};
+      return mutation.mutateAsync({ data, requestConfig }, otherOptions);
+    } else {
+      setRequestPayload({ data, options });
+      return undefined;
+    }
   };
 
-  return { post, uploadProgressPercent, ...mutation };
+  useEffect(() => {
+    if (!isFutureMutationsPaused && requestPayload) {
+      post(requestPayload.data, requestPayload.options);
+      setRequestPayload(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFutureMutationsPaused]);
+
+  return { post, uploadProgressPercent, ...mutation, isLoading: mutation.isLoading || isFutureMutationsPaused };
 };
