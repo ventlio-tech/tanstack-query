@@ -4,7 +4,7 @@ import type { RawAxiosRequestHeaders } from 'axios';
 import { useEffect, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
-import { makeRequest } from '../request';
+import { HttpMethod, makeRequest } from '../request';
 import { usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
@@ -33,6 +33,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
       path: requestUrl,
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
+      method: HttpMethod.DELETE,
       timeout: TIMEOUT,
     };
 
