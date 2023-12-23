@@ -1,11 +1,10 @@
 import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
-import type { RawAxiosRequestHeaders } from 'axios';
 import { useEffect, useState } from 'react';
-import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
+import { useEnvironmentVariables, useQueryConfig } from '../config';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
-import { usePauseFutureRequests } from '../stores';
+import { useHeaderStore, usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOptions) => {
@@ -20,12 +19,9 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { getHeaders } = useQueryHeaders();
+  const globalHeaders = useHeaderStore((state) => state.headers);
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, queryKey: QueryKey) => {
-    // get request headers
-    const globalHeaders: RawAxiosRequestHeaders | undefined = getHeaders();
-
     const [url] = queryKey;
     const requestUrl = (url ?? requestPath) as string;
 

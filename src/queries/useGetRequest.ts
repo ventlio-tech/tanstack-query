@@ -1,12 +1,11 @@
 import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
-import type { RawAxiosRequestHeaders } from '../../node_modules/axios/index';
-import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
+import { useEnvironmentVariables, useQueryConfig } from '../config';
 
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
-import { usePauseFutureRequests } from '../stores';
+import { useHeaderStore, usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions, IPagination, TanstackQueryOption } from './queries.interface';
 
 export const useGetRequest = <TResponse extends Record<string, any>>({
@@ -27,7 +26,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const [page, setPage] = useState<number>(1);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { getHeaders } = useQueryHeaders();
+  const globalHeaders = useHeaderStore((state) => state.headers);
+
   const { options: queryConfigOptions } = useQueryConfig();
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 
@@ -46,9 +46,6 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     queryKey: QueryKey
   ) => {
     if (load) {
-      // get request headers
-      const globalHeaders: RawAxiosRequestHeaders | undefined = getHeaders();
-
       const [url] = queryKey;
       const requestUrl = (url ?? requestPath) as string;
 
