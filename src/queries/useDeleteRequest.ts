@@ -24,7 +24,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, queryKey: QueryKey) => {
     // get request headers
-    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+    const globalHeaders: RawAxiosRequestHeaders | undefined = getHeaders();
 
     const [url] = queryKey;
     const requestUrl = (url ?? requestPath) as string;

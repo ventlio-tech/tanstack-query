@@ -47,7 +47,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   ) => {
     if (load) {
       // get request headers
-      const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+      const globalHeaders: RawAxiosRequestHeaders | undefined = getHeaders();
 
       const [url] = queryKey;
       const requestUrl = (url ?? requestPath) as string;

@@ -24,7 +24,7 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
     // get request headers
-    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+    const globalHeaders: RawAxiosRequestHeaders | undefined = getHeaders();
 
     const requestOptions = {
       path: path,

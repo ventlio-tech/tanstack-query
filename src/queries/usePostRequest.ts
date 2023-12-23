@@ -39,7 +39,7 @@ export const usePostRequest = <TResponse>({
     postData: { data: any; requestConfig?: Partial<IMakeRequest> }
   ) => {
     // get request headers
-    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+    const globalHeaders: RawAxiosRequestHeaders | undefined = getHeaders();
 
     const { data, requestConfig } = postData;
 

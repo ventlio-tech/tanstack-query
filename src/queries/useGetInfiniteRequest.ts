@@ -59,7 +59,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   ) => {
     if (load) {
       // get request headers
-      const globalHeaders: RawAxiosRequestHeaders = getHeaders();
+      const globalHeaders: RawAxiosRequestHeaders | undefined = getHeaders();
 
       const requestOptions = {
         path: pageParam ?? requestPath,
