@@ -19,11 +19,12 @@ export interface BootstrapModelConfig {
 
 export type ContextType = 'app' | 'web' | 'electronjs';
 export interface TanstackQueryConfig {
-  headers: RawAxiosRequestHeaders;
   options?: BootstrapConfig;
 }
 
 export interface IUseQueryHeaders {
-  getHeaders: () => TanstackQueryConfig['headers'];
-  setQueryHeaders: (header: TanstackQueryConfig['headers']) => void;
+  getHeaders: () => QueryHeaders;
+  setQueryHeaders: (header: QueryHeaders) => void;
 }
+
+export type QueryHeaders = RawAxiosRequestHeaders | undefined;

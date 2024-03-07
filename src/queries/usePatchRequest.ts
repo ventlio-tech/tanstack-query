@@ -1,30 +1,27 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import type { RawAxiosRequestHeaders } from 'axios';
 import { useEffect, useState } from 'react';
-import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
+import { useEnvironmentVariables, useQueryConfig } from '../config';
 import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import { HttpMethod, makeRequest } from '../request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
-import { usePauseFutureRequests } from '../stores';
+import { useHeaderStore, usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
+  const globalHeaders = useHeaderStore((state) => state.headers);
 
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 
   const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
 
-  const { getHeaders } = useQueryHeaders();
-
   const config = useQueryConfig();
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
     // get request headers
-    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
     const requestOptions = {
       path: path,

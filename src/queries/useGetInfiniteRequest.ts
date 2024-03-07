@@ -1,12 +1,11 @@
 import type { InfiniteData, QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import type { RawAxiosRequestHeaders } from 'axios';
 import { startTransition, useEffect, useMemo, useState } from 'react';
-import { useEnvironmentVariables, useQueryConfig, useQueryHeaders } from '../config';
+import { useEnvironmentVariables, useQueryConfig } from '../config';
 
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
-import { usePauseFutureRequests } from '../stores';
+import { useHeaderStore, usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions, TanstackInfiniteQueryOption } from './queries.interface';
 
 interface Pagination {
@@ -32,7 +31,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   keyTracker?: string;
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { getHeaders } = useQueryHeaders();
+  const globalHeaders = useHeaderStore((state) => state.headers);
   const [requestPath, setRequestPath] = useState<string>(path);
 
   const [options, setOptions] = useState<any>(queryOptions);
@@ -59,7 +58,6 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   ) => {
     if (load) {
       // get request headers
-      const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
       const requestOptions = {
         path: pageParam ?? requestPath,

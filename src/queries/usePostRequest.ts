@@ -1,14 +1,13 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { useEnvironmentVariables, useQueryConfig, useQueryHeaders, useReactNativeEnv } from '../config';
+import { useEnvironmentVariables, useQueryConfig, useReactNativeEnv } from '../config';
 
-import type { RawAxiosRequestHeaders } from 'axios';
 import { useEffect, useState } from 'react';
 import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
-import { usePauseFutureRequests } from '../stores';
+import { useHeaderStore, usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePostRequest = <TResponse>({
@@ -26,7 +25,7 @@ export const usePostRequest = <TResponse>({
 
   const config = useQueryConfig();
 
-  const { getHeaders } = useQueryHeaders();
+  const globalHeaders = useHeaderStore((state) => state.headers);
   const { isApp } = useReactNativeEnv();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
@@ -39,7 +38,6 @@ export const usePostRequest = <TResponse>({
     postData: { data: any; requestConfig?: Partial<IMakeRequest> }
   ) => {
     // get request headers
-    const globalHeaders: RawAxiosRequestHeaders = getHeaders();
 
     const { data, requestConfig } = postData;
 
