@@ -106,23 +106,18 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     }
   }, [keyTracker, requestPath, queryClient, queryOptions?.staleTime]);
 
-  const nextPage = (data?: IRequestSuccess<TResponse>) => {
-    const queryData = data ?? query.data;
-    data = queryData ?? queryClient.getQueryData([requestPath, {}]);
-
-    if (data?.data.pagination) {
-      const pagination: IPagination = data.data.pagination;
+  const nextPage = () => {
+    if (query.data?.data.pagination) {
+      const pagination: IPagination = query.data.data.pagination;
       if (pagination.next_page !== pagination.current_page && pagination.next_page > pagination.current_page) {
         setRequestPath(constructPaginationLink(requestPath, pagination.next_page));
       }
     }
   };
 
-  const prevPage = (data?: IRequestSuccess<TResponse>) => {
-    const queryData = data ?? query.data;
-    data = queryData ?? queryClient.getQueryData([requestPath, {}]);
-    if (data?.data.pagination) {
-      const pagination: IPagination = data.data.pagination;
+  const prevPage = () => {
+    if (query.data?.data.pagination) {
+      const pagination: IPagination = query.data.data.pagination;
       if (pagination.previous_page !== pagination.current_page && pagination.previous_page < pagination.current_page) {
         setRequestPath(constructPaginationLink(requestPath, pagination.previous_page));
       }
