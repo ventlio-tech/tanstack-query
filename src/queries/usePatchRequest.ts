@@ -63,13 +63,13 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
   };
 
   // register post mutation
-  const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>(
-    (dataData: any) =>
+  const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>({
+    mutationFn: (dataData: any) =>
       new Promise<IRequestSuccess<TResponse>>((res, rej) => {
         return sendRequest(res, rej, dataData);
       }),
-    { mutationKey: [path, { type: 'mutation' }] }
-  );
+    mutationKey: [path, { type: 'mutation' }],
+  });
 
   const patch = async (
     data: any,
@@ -91,5 +91,5 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureMutationsPaused]);
 
-  return { patch, uploadProgressPercent, ...mutation, isLoading: mutation.isLoading || isFutureMutationsPaused };
+  return { patch, uploadProgressPercent, ...mutation, isLoading: mutation.isPending || isFutureMutationsPaused };
 };

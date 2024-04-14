@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 
-export const useKeyTrackerModel = <T>(keyTracker: string) => {
+export const useKeyTrackerModel = (keyTracker: string) => {
   const queryClient = useQueryClient();
 
   const getQueryKey = (innerKeyTracker?: string) => {
@@ -12,7 +12,7 @@ export const useKeyTrackerModel = <T>(keyTracker: string) => {
   const refetchQuery = async (innerKeyTracker?: string) => {
     const queryKey: any = getQueryKey(innerKeyTracker ?? keyTracker);
 
-    await queryClient.refetchQueries<T>({
+    await queryClient.refetchQueries({
       queryKey,
       exact: true,
     });
