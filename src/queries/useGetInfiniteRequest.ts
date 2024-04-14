@@ -1,4 +1,4 @@
-import type { InfiniteData, QueryKey, UseQueryOptions } from '@tanstack/react-query';
+import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig } from '../config';
@@ -110,19 +110,17 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     return pathname + '?' + queryParams.toString();
   };
 
-  const query = useInfiniteQuery<any, any, IRequestSuccess<TResponse & { pagination: Pagination }>>(
-    [requestPath, {}],
-    ({ pageParam = requestPath, queryKey }) =>
+  const query = useInfiniteQuery<any, any, IRequestSuccess<TResponse & { pagination: Pagination }>>({
+    queryKey: [requestPath, {}],
+    queryFn: ({ pageParam = requestPath, queryKey }) =>
       new Promise<IRequestSuccess<TResponse & { pagination: Pagination }> | IRequestError>((res, rej) =>
-        sendRequest(res, rej, queryKey, pageParam)
+        sendRequest(res, rej, queryKey, pageParam as string)
       ),
-    {
-      enabled: load && !isFutureQueriesPaused,
-      getNextPageParam: (lastPage) => constructPaginationLink('next_page', lastPage),
-      getPreviousPageParam: (lastPage) => constructPaginationLink('previous_page', lastPage),
-      ...options,
-    }
-  );
+    enabled: load && !isFutureQueriesPaused,
+    getNextPageParam: (lastPage) => constructPaginationLink('next_page', lastPage),
+    getPreviousPageParam: (lastPage) => constructPaginationLink('previous_page', lastPage),
+    ...options,
+  });
 
   const setOptionsAsync = async (fetchOptions: any) => {
     startTransition(() => {
@@ -139,12 +137,10 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       Array<any>
     >
   ): Promise<
-    | InfiniteData<
-        IRequestSuccess<
-          TResponse & {
-            pagination: Pagination;
-          }
-        >
+    | IRequestSuccess<
+        TResponse & {
+          pagination: Pagination;
+        }
       >
     | undefined
   > => {
@@ -177,7 +173,6 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     if (keyTracker) {
       // set expiration time for the tracker
       queryClient.setQueryDefaults([keyTracker], {
-        cacheTime: Infinity,
         staleTime: Infinity,
       });
 
