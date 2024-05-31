@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios';
 import axios from 'axios';
 import { axiosInstance } from './axios-instance';
 
@@ -27,35 +28,38 @@ export async function makeRequest<TResponse>({
   // configure request header1
   if (!isFormData) {
     headers['Content-Type'] = ContentType.APPLICATION_JSON;
-  } else {
-    if (isApp) {
-      headers['Content-Type'] = ContentType.MULTIPART_FORM_DATA;
-      // add the app files
-      for (const fileKey in appFiles) {
-        const currentFile = appFiles[fileKey];
-        if (Array.isArray(currentFile)) {
-          for (const innerFile of currentFile) {
-            body.append(fileKey, innerFile);
-          }
-        } else {
-          body.append(fileKey, currentFile);
+  } else if (isApp) {
+    headers['Content-Type'] = ContentType.MULTIPART_FORM_DATA;
+    // add the app files
+    for (const fileKey in appFiles) {
+      const currentFile = appFiles[fileKey];
+      if (Array.isArray(currentFile)) {
+        for (const innerFile of currentFile) {
+          body.append(fileKey, innerFile);
         }
+      } else {
+        body.append(fileKey, currentFile);
       }
-    } else {
-      delete headers['Content-Type'];
     }
+  } else {
+    delete headers['Content-Type'];
   }
 
   try {
     const axiosRequest = axiosInstance({ baseURL, headers, timeout });
 
-    //   send request
-    const resp = await axiosRequest({
+    const axiosRequestConfig: AxiosRequestConfig<Record<string, any>> = {
       url: path,
       method,
-      data: body,
       onUploadProgress,
-    });
+    };
+
+    if (Object.keys(body).length > 0) {
+      axiosRequestConfig.data = body;
+    }
+
+    //   send request
+    const resp = await axiosRequest(axiosRequestConfig);
 
     // get response json
     const jsonResp: any = await resp.data;
