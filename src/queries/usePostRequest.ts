@@ -95,8 +95,10 @@ export const usePostRequest = <TResponse>({
     IRequestSuccess<TResponse>,
     IRequestError,
     { data: any; requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
-  >(async (postData) => new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData)), {
+  >({
     mutationKey: [path, { type: 'mutation' }],
+    mutationFn: async (postData) =>
+      new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData)),
   });
 
   const post = async <T>(
@@ -129,5 +131,5 @@ export const usePostRequest = <TResponse>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureMutationsPaused]);
 
-  return { post, uploadProgressPercent, ...mutation, isLoading: mutation.isLoading || isFutureMutationsPaused };
+  return { post, uploadProgressPercent, ...mutation, isLoading: mutation.isPending || isFutureMutationsPaused };
 };

@@ -12,7 +12,7 @@ export const useRefetchQuery = async (queryKey: any[]) => {
       { throwOnError: true, cancelRefetch: true }
     );
 
-    return queryClient.getQueriesData<T>(innerQueryKey ?? queryKey);
+    return queryClient.getQueriesData<T>({ queryKey: innerQueryKey ?? queryKey });
   };
 
   return { refetchQuery };

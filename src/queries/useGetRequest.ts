@@ -78,15 +78,13 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     }
   };
 
-  const query = useQuery<any, any, IRequestSuccess<TResponse>>(
-    [requestPath, {}],
-    ({ queryKey }) =>
+  const query = useQuery<any, any, IRequestSuccess<TResponse>>({
+    queryKey: [requestPath, {}],
+    queryFn: ({ queryKey }) =>
       new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej, queryKey)),
-    {
-      enabled: load && !isFutureQueriesPaused,
-      ...options,
-    }
-  );
+    enabled: load && !isFutureQueriesPaused,
+    ...options,
+  });
 
   useEffect(() => {
     if (path) {
@@ -98,7 +96,6 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     if (keyTracker) {
       // set expiration time for the tracker
       queryClient.setQueryDefaults([keyTracker], {
-        cacheTime: Infinity,
         staleTime: Infinity,
       });
 

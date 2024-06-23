@@ -24,7 +24,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     if (!path) {
       queryClient.setQueryData(queryKey, records);
     } else {
-      const queryData = queryClient.getQueryData(queryKey, { exact }) ?? {};
+      const queryData = queryClient.getQueryData(queryKey) ?? {};
       queryClient.setQueryData(queryKey, lodashSet(queryData, path, records));
     }
 
@@ -32,7 +32,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
   };
 
   const findAll = (path?: string): T[] | T | undefined => {
-    const data = queryClient.getQueryData(queryKey, { exact });
+    const data = queryClient.getQueryData(queryKey);
 
     if (!data) {
       return [];
@@ -62,7 +62,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
   };
 
   const get = (path?: string): T | undefined => {
-    let data = queryClient.getQueryData(queryKey, { exact });
+    let data = queryClient.getQueryData(queryKey);
     if (path) {
       data = result<T>(data, path);
     }
@@ -75,7 +75,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
       newData = lodashSet(data, path, newData);
     }
 
-    return queryClient.setQueryData(queryKey, newData) as DataType;
+    return queryClient.setQueryData(queryKey, () => newData as any) as DataType;
   };
 
   const getModelConfig = () => {
@@ -108,7 +108,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     if (!path) {
       queryClient.setQueryData(queryKey, newData);
     } else {
-      const queryData = queryClient.getQueryData(queryKey, { exact }) ?? {};
+      const queryData = queryClient.getQueryData(queryKey) ?? {};
       queryClient.setQueryData(queryKey, lodashSet(queryData, path, newData));
     }
     return updatedRecord;
@@ -135,7 +135,7 @@ export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): Que
     if (!path) {
       queryClient.setQueryData(queryKey, newData);
     } else {
-      const queryData = queryClient.getQueryData(queryKey, { exact }) ?? {};
+      const queryData = queryClient.getQueryData(queryKey) ?? {};
       queryClient.setQueryData(queryKey, lodashSet(queryData, path, newData));
     }
     return updated;

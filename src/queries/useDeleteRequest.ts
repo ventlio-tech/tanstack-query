@@ -52,12 +52,13 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     }
   };
 
-  const query = useQuery<any, any, IRequestSuccess<TResponse>>(
-    [requestPath, {}],
-    ({ queryKey }) =>
+  const query = useQuery<any, any, IRequestSuccess<TResponse>>({
+    queryKey: [requestPath, {}],
+    queryFn: ({ queryKey }) =>
       new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej, queryKey)),
-    { enabled: false, ...options }
-  );
+    enabled: false,
+    ...options,
+  });
 
   const updatedPathAsync = async (link: string) => {
     return setRequestPath(link);
@@ -78,8 +79,9 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
     if (!isFutureQueriesPaused) {
       // set enabled to be true for every delete
-      internalDeleteOptions = internalDeleteOptions ?? {};
-      internalDeleteOptions.enabled = true;
+      internalDeleteOptions = internalDeleteOptions
+        ? { ...internalDeleteOptions, queryKey: [link, {}], enabled: true }
+        : { queryKey: [link, {}], enabled: true };
 
       await setOptionsAsync(internalDeleteOptions);
       await updatedPathAsync(link);
