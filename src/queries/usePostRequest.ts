@@ -96,9 +96,9 @@ export const usePostRequest = <TResponse>({
     IRequestError,
     { data: any; requestConfig?: Partial<Omit<IMakeRequest, 'body'>> }
   >({
+    mutationKey: [path, { type: 'mutation' }],
     mutationFn: async (postData) =>
       new Promise<IRequestSuccess<TResponse>>((res, rej) => sendRequest(res, rej, postData)),
-    mutationKey: [path, { type: 'mutation' }],
   });
 
   const post = async <T>(

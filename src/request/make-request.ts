@@ -1,4 +1,4 @@
-import type { AxiosRequestConfig } from 'axios';
+import type { AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
 import axios from 'axios';
 import { axiosInstance } from './axios-instance';
 
@@ -26,24 +26,7 @@ export async function makeRequest<TResponse>({
   body = (isFormData ? axios.toFormData(body as FormData) : body) as FormData;
 
   // configure request header1
-  if (!isFormData) {
-    headers['Content-Type'] = ContentType.APPLICATION_JSON;
-  } else if (isApp) {
-    headers['Content-Type'] = ContentType.MULTIPART_FORM_DATA;
-    // add the app files
-    for (const fileKey in appFiles) {
-      const currentFile = appFiles[fileKey];
-      if (Array.isArray(currentFile)) {
-        for (const innerFile of currentFile) {
-          body.append(fileKey, innerFile);
-        }
-      } else {
-        body.append(fileKey, currentFile);
-      }
-    }
-  } else {
-    delete headers['Content-Type'];
-  }
+  configureRequestHeader(isFormData, headers, isApp, appFiles, body);
 
   try {
     const axiosRequest = axiosInstance({ baseURL, headers, timeout });
@@ -87,6 +70,34 @@ export async function makeRequest<TResponse>({
     });
   }
 }
+
+const configureRequestHeader = (
+  isFormData: boolean | undefined,
+  headers: RawAxiosRequestHeaders,
+  isApp: boolean | undefined,
+  appFiles: Record<string, string>,
+  body: Record<string, any>
+) => {
+  if (!isFormData) {
+    headers['Content-Type'] = ContentType.APPLICATION_JSON;
+  } else if (isApp) {
+    headers['Content-Type'] = ContentType.MULTIPART_FORM_DATA;
+    // add the app files
+    for (const fileKey in appFiles) {
+      const currentFile = appFiles[fileKey];
+      if (Array.isArray(currentFile)) {
+        for (const innerFile of currentFile) {
+          body.append(fileKey, innerFile);
+        }
+      } else {
+        body.append(fileKey, currentFile);
+      }
+    }
+  } else {
+    delete headers['Content-Type'];
+  }
+};
+
 function getAppFiles(body: any, fileSelectors: string[] = []) {
   const files: Record<string, string> = {};
 

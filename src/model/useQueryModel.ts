@@ -75,7 +75,7 @@ export const useQueryModel = <T>(keyTracker: string): QueryModelBuilder<T> => {
       newData = lodashSet(data, path, newData);
     }
 
-    return queryClient.setQueryData(queryKey, newData as DataType) as DataType;
+    return queryClient.setQueryData(queryKey, () => newData as any) as DataType;
   };
 
   const getModelConfig = () => {

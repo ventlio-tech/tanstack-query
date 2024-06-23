@@ -1,4 +1,4 @@
-import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
+import type { InfiniteData, QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig } from '../config';
@@ -110,7 +110,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     return pathname + '?' + queryParams.toString();
   };
 
-  const query = useInfiniteQuery<any, any, IRequestSuccess<TResponse & { pagination: Pagination }>>({
+  const query = useInfiniteQuery<any, any, InfiniteData<IRequestSuccess<TResponse & { pagination: Pagination }>>>({
     queryKey: [requestPath, {}],
     queryFn: ({ pageParam = requestPath, queryKey }) =>
       new Promise<IRequestSuccess<TResponse & { pagination: Pagination }> | IRequestError>((res, rej) =>
@@ -137,10 +137,12 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       Array<any>
     >
   ): Promise<
-    | IRequestSuccess<
-        TResponse & {
-          pagination: Pagination;
-        }
+    | InfiniteData<
+        IRequestSuccess<
+          TResponse & {
+            pagination: Pagination;
+          }
+        >
       >
     | undefined
   > => {

@@ -9,7 +9,7 @@ import type { IRequestError, IRequestSuccess } from '../request/request.interfac
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
-export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
+export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
   const globalHeaders = useHeaderStore((state) => state.headers);
@@ -26,7 +26,7 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     const requestOptions = {
       path: path,
       body: data,
-      method: HttpMethod.PATCH,
+      method: HttpMethod.PUT,
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
       timeout: TIMEOUT,
@@ -43,19 +43,19 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     }
 
     if (shouldContinue) {
-      const patchResponse = await makeRequest<TResponse>(requestOptions);
-      if (patchResponse.status) {
+      const putResponse = await makeRequest<TResponse>(requestOptions);
+      if (putResponse.status) {
         // scroll to top after success
         if (config.options?.context !== 'app') {
           scrollToTop();
         }
-        res(patchResponse as IRequestSuccess<TResponse>);
+        res(putResponse as IRequestSuccess<TResponse>);
       } else {
         // scroll to top after error
         if (config.options?.context !== 'app') {
           scrollToTop();
         }
-        rej(patchResponse);
+        rej(putResponse);
       }
     } else {
       rej(null);
@@ -71,7 +71,7 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
       }),
   });
 
-  const patch = async (
+  const put = async (
     data: any,
     options?: MutateOptions<IRequestSuccess<TResponse>, IRequestError, void, unknown> | undefined
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
@@ -85,11 +85,11 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
 
   useEffect(() => {
     if (!isFutureMutationsPaused && requestPayload) {
-      patch(requestPayload.data, requestPayload.options);
+      put(requestPayload.data, requestPayload.options);
       setRequestPayload(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureMutationsPaused]);
 
-  return { patch, uploadProgressPercent, ...mutation, isLoading: mutation.isPending || isFutureMutationsPaused };
+  return { put, uploadProgressPercent, ...mutation, isLoading: mutation.isPending || isFutureMutationsPaused };
 };
