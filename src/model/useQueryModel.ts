@@ -5,7 +5,7 @@ import { useQueryConfig } from '../config';
 import type { QueryModelAddPosition, QueryModelBuilder } from './model.interface';
 import { useKeyTrackerModel } from './useKeyTrackerModel';
 
-export const useQueryModel = <T>(keyTracker: string, exact: boolean = true): QueryModelBuilder<T> => {
+export const useQueryModel = <T>(keyTracker: string): QueryModelBuilder<T> => {
   const queryClient = useQueryClient();
   const { getQueryKey } = useKeyTrackerModel(keyTracker);
   const queryKey = getQueryKey() as any[];
