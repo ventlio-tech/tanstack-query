@@ -137,10 +137,12 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       Array<any>
     >
   ): Promise<
-    | IRequestSuccess<
-        TResponse & {
-          pagination: Pagination;
-        }
+    | InfiniteData<
+        IRequestSuccess<
+          TResponse & {
+            pagination: Pagination;
+          }
+        >
       >
     | undefined
   > => {
