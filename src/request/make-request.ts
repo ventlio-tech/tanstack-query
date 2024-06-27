@@ -37,7 +37,7 @@ export async function makeRequest<TResponse>({
       onUploadProgress,
     };
 
-    if (Object.keys(body).length > 0) {
+    if (Object.keys(body).length > 0 || (isFormData && !isApp && [...body.keys()].length > 0)) {
       axiosRequestConfig.data = body;
     }
 
