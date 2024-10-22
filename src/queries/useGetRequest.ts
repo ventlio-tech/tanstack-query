@@ -43,55 +43,31 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     rej: (reason?: any) => void,
     queryKey: QueryKey
   ) => {
-    if (load) {
-      const [url] = queryKey;
-      const requestUrl = (url ?? requestPath) as string;
+    const [url] = queryKey;
+    const requestUrl = (url ?? requestPath) as string;
 
-      const requestOptions = {
-        path: requestUrl,
-        headers: { ...globalHeaders, ...headers },
-        baseURL: baseUrl ?? API_URL,
-        timeout: TIMEOUT,
-      };
+    const requestOptions = {
+      path: requestUrl,
+      headers: { ...globalHeaders, ...headers },
+      baseURL: baseUrl ?? API_URL,
+      timeout: TIMEOUT,
+    };
 
-      let shouldContinue = true;
-
-      if (queryConfigOptions?.queryMiddleware) {
-        shouldContinue = await queryConfigOptions.queryMiddleware({ queryKey, ...requestOptions });
-      }
-
-      if (shouldContinue) {
-        let getResponse: IRequestError | IRequestSuccess<TResponse>;
-        if (queryConfigOptions?.middleware) {
-          // perform global middleware
-          const middlewareResponse = await queryConfigOptions.middleware(
-            async () => await makeRequest<TResponse>(requestOptions),
-            {
-              path,
-              baseUrl: baseUrl ?? API_URL,
-            }
-          );
-
-          if (!middlewareResponse) {
-            rej();
-            return;
-          }
-
-          getResponse = middlewareResponse;
-        } else {
-          getResponse = await makeRequest<TResponse>(requestOptions);
-        }
-
-        if (getResponse.status) {
-          res(getResponse as IRequestSuccess<TResponse>);
-        } else {
-          rej(getResponse);
-        }
-      } else {
-        rej(null);
-      }
+    let getResponse: IRequestError | IRequestSuccess<TResponse>;
+    if (queryConfigOptions?.middleware) {
+      // perform global middleware
+      getResponse = await queryConfigOptions.middleware(async () => await makeRequest<TResponse>(requestOptions), {
+        path,
+        baseUrl: baseUrl ?? API_URL,
+      });
     } else {
-      res(null as any);
+      getResponse = await makeRequest<TResponse>(requestOptions);
+    }
+
+    if (getResponse.status) {
+      res(getResponse as IRequestSuccess<TResponse>);
+    } else {
+      rej(getResponse);
     }
   };
 

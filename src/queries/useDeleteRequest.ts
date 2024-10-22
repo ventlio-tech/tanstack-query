@@ -33,41 +33,21 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
       timeout: TIMEOUT,
     };
 
-    let shouldContinue = true;
-
-    if (queryConfigOptions?.queryMiddleware) {
-      shouldContinue = await queryConfigOptions.queryMiddleware({ queryKey, ...requestOptions });
+    let deleteResponse: IRequestError | IRequestSuccess<TResponse>;
+    if (queryConfigOptions?.middleware) {
+      // perform global middleware
+      deleteResponse = await queryConfigOptions.middleware(async () => await makeRequest<TResponse>(requestOptions), {
+        path: requestUrl,
+        baseUrl: baseUrl ?? API_URL,
+      });
+    } else {
+      deleteResponse = await makeRequest<TResponse>(requestOptions);
     }
 
-    if (shouldContinue) {
-      let deleteResponse: IRequestError | IRequestSuccess<TResponse>;
-      if (queryConfigOptions?.middleware) {
-        // perform global middleware
-        const middlewareResponse = await queryConfigOptions.middleware(
-          async () => await makeRequest<TResponse>(requestOptions),
-          {
-            path: requestUrl,
-            baseUrl: baseUrl ?? API_URL,
-          }
-        );
-
-        if (!middlewareResponse) {
-          rej();
-          return;
-        }
-
-        deleteResponse = middlewareResponse;
-      } else {
-        deleteResponse = await makeRequest<TResponse>(requestOptions);
-      }
-
-      if (deleteResponse.status) {
-        res(deleteResponse as IRequestSuccess<TResponse>);
-      } else {
-        rej(deleteResponse);
-      }
+    if (deleteResponse.status) {
+      res(deleteResponse as IRequestSuccess<TResponse>);
     } else {
-      rej(null);
+      rej(deleteResponse);
     }
   };
 

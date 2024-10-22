@@ -1,4 +1,4 @@
-import type { InfiniteData, QueryKey, UseQueryOptions } from '@tanstack/react-query';
+import type { InfiniteData, UseQueryOptions } from '@tanstack/react-query';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig } from '../config';
@@ -53,7 +53,6 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
         | PromiseLike<IRequestError | IRequestSuccess<TResponse & { pagination: Pagination }>>
     ) => void,
     rej: (reason?: any) => void,
-    queryKey: QueryKey,
     pageParam?: string
   ) => {
     if (load) {
@@ -66,44 +65,24 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
         timeout: TIMEOUT,
       };
 
-      let shouldContinue = true;
-
-      if (queryConfigOptions?.queryMiddleware) {
-        shouldContinue = await queryConfigOptions.queryMiddleware({ queryKey, ...requestOptions });
+      let getResponse: IRequestError | IRequestSuccess<TResponse>;
+      if (queryConfigOptions?.middleware) {
+        // perform global middleware
+        getResponse = await queryConfigOptions.middleware(async () => await makeRequest<TResponse>(requestOptions), {
+          path,
+          baseUrl: baseUrl ?? API_URL,
+        });
+      } else {
+        getResponse = await makeRequest<TResponse>(requestOptions);
       }
 
-      if (shouldContinue) {
-        let getResponse: IRequestError | IRequestSuccess<TResponse>;
-        if (queryConfigOptions?.middleware) {
-          // perform global middleware
-          const middlewareResponse = await queryConfigOptions.middleware(
-            async () => await makeRequest<TResponse>(requestOptions),
-            {
-              path,
-              baseUrl: baseUrl ?? API_URL,
-            }
-          );
-
-          if (!middlewareResponse) {
-            rej();
-            return;
-          }
-
-          getResponse = middlewareResponse;
-        } else {
-          getResponse = await makeRequest<TResponse>(requestOptions);
-        }
-
-        if (getResponse.status) {
-          res(getResponse as IRequestSuccess<TResponse & { pagination: Pagination }>);
-        } else {
-          rej(getResponse);
-        }
+      if (getResponse.status) {
+        res(getResponse as IRequestSuccess<TResponse & { pagination: Pagination }>);
       } else {
-        rej(null);
+        rej(getResponse);
       }
     } else {
-      res(null as any);
+      rej(null);
     }
   };
 
@@ -131,9 +110,9 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
 
   const query = useInfiniteQuery<any, any, InfiniteData<IRequestSuccess<TResponse & { pagination: Pagination }>>>({
     queryKey: [requestPath, {}],
-    queryFn: ({ pageParam = requestPath, queryKey }) =>
+    queryFn: ({ pageParam = requestPath }) =>
       new Promise<IRequestSuccess<TResponse & { pagination: Pagination }> | IRequestError>((res, rej) =>
-        sendRequest(res, rej, queryKey, pageParam as string)
+        sendRequest(res, rej, pageParam as string)
       ),
     enabled: load && !isFutureQueriesPaused,
     getNextPageParam: (lastPage) => constructPaginationLink('next_page', lastPage),

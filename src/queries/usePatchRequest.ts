@@ -33,52 +33,34 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
       onUploadProgress,
     };
 
-    let shouldContinue = true;
-
-    if (config.options?.mutationMiddleware) {
-      shouldContinue = await config.options.mutationMiddleware({
-        mutationKey: [path, { type: 'mutation' }],
-        ...requestOptions,
-      });
-    }
-
-    if (shouldContinue) {
-      let patchResponse: IRequestError | IRequestSuccess<TResponse>;
-      if (config.options?.middleware) {
-        // perform global middleware
-        const middlewareResponse = await config.options.middleware(
-          async () => await makeRequest<TResponse>(requestOptions),
-          {
-            path,
-            baseUrl: baseUrl ?? API_URL,
-            body: data,
-          }
-        );
-
-        if (!middlewareResponse) {
-          rej();
-          return;
+    let patchResponse: IRequestError | IRequestSuccess<TResponse>;
+    if (config.options?.middleware) {
+      // perform global middleware
+      const middlewareResponse = await config.options.middleware(
+        async () => await makeRequest<TResponse>(requestOptions),
+        {
+          path,
+          baseUrl: baseUrl ?? API_URL,
+          body: data,
         }
+      );
 
-        patchResponse = middlewareResponse;
-      } else {
-        patchResponse = await makeRequest<TResponse>(requestOptions);
-      }
-      if (patchResponse.status) {
-        // scroll to top after success
-        if (config.options?.context !== 'app') {
-          scrollToTop();
-        }
-        res(patchResponse as IRequestSuccess<TResponse>);
-      } else {
-        // scroll to top after error
-        if (config.options?.context !== 'app') {
-          scrollToTop();
-        }
-        rej(patchResponse);
-      }
+      patchResponse = middlewareResponse;
     } else {
-      rej(null);
+      patchResponse = await makeRequest<TResponse>(requestOptions);
+    }
+    if (patchResponse.status) {
+      // scroll to top after success
+      if (config.options?.context !== 'app') {
+        scrollToTop();
+      }
+      res(patchResponse as IRequestSuccess<TResponse>);
+    } else {
+      // scroll to top after error
+      if (config.options?.context !== 'app') {
+        scrollToTop();
+      }
+      rej(patchResponse);
     }
   };
 

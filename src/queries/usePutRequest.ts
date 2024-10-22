@@ -33,52 +33,29 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
       onUploadProgress,
     };
 
-    let shouldContinue = true;
-
-    if (config.options?.mutationMiddleware) {
-      shouldContinue = await config.options.mutationMiddleware({
-        mutationKey: [path, { type: 'mutation' }],
-        ...requestOptions,
+    let putResponse: IRequestError | IRequestSuccess<TResponse>;
+    if (config.options?.middleware) {
+      // perform global middleware
+      putResponse = await config.options.middleware(async () => await makeRequest<TResponse>(requestOptions), {
+        path,
+        baseUrl: baseUrl ?? API_URL,
+        body: data,
       });
-    }
-
-    if (shouldContinue) {
-      let putResponse: IRequestError | IRequestSuccess<TResponse>;
-      if (config.options?.middleware) {
-        // perform global middleware
-        const middlewareResponse = await config.options.middleware(
-          async () => await makeRequest<TResponse>(requestOptions),
-          {
-            path,
-            baseUrl: baseUrl ?? API_URL,
-            body: data,
-          }
-        );
-
-        if (!middlewareResponse) {
-          rej();
-          return;
-        }
-
-        putResponse = middlewareResponse;
-      } else {
-        putResponse = await makeRequest<TResponse>(requestOptions);
-      }
-      if (putResponse.status) {
-        // scroll to top after success
-        if (config.options?.context !== 'app') {
-          scrollToTop();
-        }
-        res(putResponse as IRequestSuccess<TResponse>);
-      } else {
-        // scroll to top after error
-        if (config.options?.context !== 'app') {
-          scrollToTop();
-        }
-        rej(putResponse);
-      }
     } else {
-      rej(null);
+      putResponse = await makeRequest<TResponse>(requestOptions);
+    }
+    if (putResponse.status) {
+      // scroll to top after success
+      if (config.options?.context !== 'app') {
+        scrollToTop();
+      }
+      res(putResponse as IRequestSuccess<TResponse>);
+    } else {
+      // scroll to top after error
+      if (config.options?.context !== 'app') {
+        scrollToTop();
+      }
+      rej(putResponse);
     }
   };
 
