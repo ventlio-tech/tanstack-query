@@ -40,12 +40,31 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     }
 
     if (shouldContinue) {
-      const postResponse = await makeRequest<TResponse>(requestOptions);
+      let deleteResponse: IRequestError | IRequestSuccess<TResponse>;
+      if (queryConfigOptions?.middleware) {
+        // perform global middleware
+        const middlewareResponse = await queryConfigOptions.middleware(
+          async () => await makeRequest<TResponse>(requestOptions),
+          {
+            path: requestUrl,
+            baseUrl: baseUrl ?? API_URL,
+          }
+        );
 
-      if (postResponse.status) {
-        res(postResponse as IRequestSuccess<TResponse>);
+        if (!middlewareResponse) {
+          rej();
+          return;
+        }
+
+        deleteResponse = middlewareResponse;
       } else {
-        rej(postResponse);
+        deleteResponse = await makeRequest<TResponse>(requestOptions);
+      }
+
+      if (deleteResponse.status) {
+        res(deleteResponse as IRequestSuccess<TResponse>);
+      } else {
+        rej(deleteResponse);
       }
     } else {
       rej(null);
@@ -101,5 +120,5 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureQueriesPaused]);
 
-  return { destroy, ...query, isLoading: query.isLoading || isFutureQueriesPaused };
+  return { destroy, ...query, isLoading: (query.isLoading as boolean) || isFutureQueriesPaused };
 };

@@ -18,11 +18,13 @@ export type TanstackQueryOption<TResponse> = UseQueryOptions<
   Array<any>
 >;
 
-export type TanstackInfiniteQueryOption<TResponse> = UseInfiniteQueryOptions<
-  IRequestSuccess<TResponse | undefined>,
-  IRequestError,
-  IRequestSuccess<TResponse | undefined>,
-  Array<any>
+export type TanstackInfiniteQueryOption<TResponse> = Partial<
+  UseInfiniteQueryOptions<
+    IRequestSuccess<TResponse | undefined>,
+    IRequestError,
+    IRequestSuccess<TResponse | undefined>,
+    Array<any>
+  >
 >;
 
 export interface DefaultRequestOptions {

@@ -43,7 +43,27 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     }
 
     if (shouldContinue) {
-      const patchResponse = await makeRequest<TResponse>(requestOptions);
+      let patchResponse: IRequestError | IRequestSuccess<TResponse>;
+      if (config.options?.middleware) {
+        // perform global middleware
+        const middlewareResponse = await config.options.middleware(
+          async () => await makeRequest<TResponse>(requestOptions),
+          {
+            path,
+            baseUrl: baseUrl ?? API_URL,
+            body: data,
+          }
+        );
+
+        if (!middlewareResponse) {
+          rej();
+          return;
+        }
+
+        patchResponse = middlewareResponse;
+      } else {
+        patchResponse = await makeRequest<TResponse>(requestOptions);
+      }
       if (patchResponse.status) {
         // scroll to top after success
         if (config.options?.context !== 'app') {

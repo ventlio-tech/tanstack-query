@@ -13,14 +13,12 @@
   "plugins": ["@typescript-eslint", "react", "react-hooks", "prettier", "import"],
   "rules": {
     "react-hooks/rules-of-hooks": "error",
-
+    "@typescript-eslint/consistent-type-imports": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-explicit-any": "off",
 
     "react/jsx-key": ["error", { "checkFragmentShorthand": true }],
     "@typescript-eslint/ban-types": "off",
-
-    "@typescript-eslint/consistent-type-imports": "error",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-empty-interface": "off",
     "@typescript-eslint/no-non-null-assertion": "off",

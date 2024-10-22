@@ -43,7 +43,27 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
     }
 
     if (shouldContinue) {
-      const putResponse = await makeRequest<TResponse>(requestOptions);
+      let putResponse: IRequestError | IRequestSuccess<TResponse>;
+      if (config.options?.middleware) {
+        // perform global middleware
+        const middlewareResponse = await config.options.middleware(
+          async () => await makeRequest<TResponse>(requestOptions),
+          {
+            path,
+            baseUrl: baseUrl ?? API_URL,
+            body: data,
+          }
+        );
+
+        if (!middlewareResponse) {
+          rej();
+          return;
+        }
+
+        putResponse = middlewareResponse;
+      } else {
+        putResponse = await makeRequest<TResponse>(requestOptions);
+      }
       if (putResponse.status) {
         // scroll to top after success
         if (config.options?.context !== 'app') {
