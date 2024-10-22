@@ -36,11 +36,14 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
     let putResponse: IRequestError | IRequestSuccess<TResponse>;
     if (config.options?.middleware) {
       // perform global middleware
-      putResponse = await config.options.middleware(async () => await makeRequest<TResponse>(requestOptions), {
-        path,
-        baseUrl: baseUrl ?? API_URL,
-        body: data,
-      });
+      putResponse = await config.options.middleware(
+        async (options) => await makeRequest<TResponse>(options ? { ...requestOptions, ...options } : requestOptions),
+        {
+          path,
+          baseUrl: baseUrl ?? API_URL,
+          body: data,
+        }
+      );
     } else {
       putResponse = await makeRequest<TResponse>(requestOptions);
     }

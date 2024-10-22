@@ -56,10 +56,16 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     let getResponse: IRequestError | IRequestSuccess<TResponse>;
     if (queryConfigOptions?.middleware) {
       // perform global middleware
-      getResponse = await queryConfigOptions.middleware(async () => await makeRequest<TResponse>(requestOptions), {
-        path,
-        baseUrl: baseUrl ?? API_URL,
-      });
+      getResponse = await queryConfigOptions.middleware(
+        async (middlewareOptions) =>
+          await makeRequest<TResponse>(
+            middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
+          ),
+        {
+          path,
+          baseUrl: baseUrl ?? API_URL,
+        }
+      );
     } else {
       getResponse = await makeRequest<TResponse>(requestOptions);
     }

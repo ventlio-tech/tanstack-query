@@ -62,11 +62,14 @@ export const usePostRequest = <TResponse>({
     let postResponse: IRequestError | IRequestSuccess<TResponse>;
     if (config.options?.middleware) {
       // perform global middleware
-      postResponse = await config.options.middleware(async () => await makeRequest<TResponse>(requestOptions), {
-        path,
-        baseUrl: baseUrl ?? API_URL,
-        body: data,
-      });
+      postResponse = await config.options.middleware(
+        async (options) => await makeRequest<TResponse>(options ? { ...requestOptions, ...options } : requestOptions),
+        {
+          path,
+          baseUrl: baseUrl ?? API_URL,
+          body: data,
+        }
+      );
     } else {
       postResponse = await makeRequest<TResponse>(requestOptions);
     }

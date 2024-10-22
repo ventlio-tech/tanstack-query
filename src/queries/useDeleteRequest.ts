@@ -36,10 +36,16 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     let deleteResponse: IRequestError | IRequestSuccess<TResponse>;
     if (queryConfigOptions?.middleware) {
       // perform global middleware
-      deleteResponse = await queryConfigOptions.middleware(async () => await makeRequest<TResponse>(requestOptions), {
-        path: requestUrl,
-        baseUrl: baseUrl ?? API_URL,
-      });
+      deleteResponse = await queryConfigOptions.middleware(
+        async (middlewareOptions) =>
+          await makeRequest<TResponse>(
+            middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
+          ),
+        {
+          path: requestUrl,
+          baseUrl: baseUrl ?? API_URL,
+        }
+      );
     } else {
       deleteResponse = await makeRequest<TResponse>(requestOptions);
     }

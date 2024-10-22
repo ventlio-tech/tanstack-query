@@ -37,7 +37,7 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     if (config.options?.middleware) {
       // perform global middleware
       const middlewareResponse = await config.options.middleware(
-        async () => await makeRequest<TResponse>(requestOptions),
+        async (options) => await makeRequest<TResponse>(options ? { ...requestOptions, ...options } : requestOptions),
         {
           path,
           baseUrl: baseUrl ?? API_URL,
