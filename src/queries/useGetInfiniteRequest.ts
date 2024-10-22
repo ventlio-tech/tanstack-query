@@ -73,7 +73,26 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       }
 
       if (shouldContinue) {
-        const getResponse = await makeRequest<TResponse>(requestOptions);
+        let getResponse: IRequestError | IRequestSuccess<TResponse>;
+        if (queryConfigOptions?.middleware) {
+          // perform global middleware
+          const middlewareResponse = await queryConfigOptions.middleware(
+            async () => await makeRequest<TResponse>(requestOptions),
+            {
+              path,
+              baseUrl: baseUrl ?? API_URL,
+            }
+          );
+
+          if (!middlewareResponse) {
+            rej();
+            return;
+          }
+
+          getResponse = middlewareResponse;
+        } else {
+          getResponse = await makeRequest<TResponse>(requestOptions);
+        }
 
         if (getResponse.status) {
           res(getResponse as IRequestSuccess<TResponse & { pagination: Pagination }>);
@@ -185,6 +204,6 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   return {
     get,
     ...query,
-    isLoading: query.isLoading || isFutureQueriesPaused,
+    isLoading: (query.isLoading as boolean) || isFutureQueriesPaused,
   };
 };

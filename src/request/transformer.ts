@@ -4,9 +4,9 @@ import type { IRequestError, IRequestSuccess, IServerRequestError, IServerReques
 export const errorTransformer = (data: IServerRequestError & { statusCode: number }): IRequestError => {
   return {
     timeStamp: new Date(),
-    status: false,
     data: data.data,
     ...data,
+    status: false,
   };
 };
 

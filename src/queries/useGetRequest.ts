@@ -1,12 +1,10 @@
-import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryKey, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables, useQueryConfig } from '../config';
 
-import type { IRequestError, IRequestSuccess } from '../request';
-import { makeRequest } from '../request';
+import { IRequestError, IRequestSuccess, makeRequest } from '../request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
-import type { DefaultRequestOptions, IPagination, TanstackQueryOption } from './queries.interface';
+import { DefaultRequestOptions, IPagination, TanstackQueryOption } from './queries.interface';
 
 export const useGetRequest = <TResponse extends Record<string, any>>({
   path,
@@ -63,7 +61,26 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       }
 
       if (shouldContinue) {
-        const getResponse = await makeRequest<TResponse>(requestOptions);
+        let getResponse: IRequestError | IRequestSuccess<TResponse>;
+        if (queryConfigOptions?.middleware) {
+          // perform global middleware
+          const middlewareResponse = await queryConfigOptions.middleware(
+            async () => await makeRequest<TResponse>(requestOptions),
+            {
+              path,
+              baseUrl: baseUrl ?? API_URL,
+            }
+          );
+
+          if (!middlewareResponse) {
+            rej();
+            return;
+          }
+
+          getResponse = middlewareResponse;
+        } else {
+          getResponse = await makeRequest<TResponse>(requestOptions);
+        }
 
         if (getResponse.status) {
           res(getResponse as IRequestSuccess<TResponse>);
@@ -104,7 +121,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   }, [keyTracker, requestPath, queryClient, queryOptions?.staleTime]);
 
   const nextPage = () => {
-    if (query.data?.data.pagination) {
+    if (query.data.data.pagination) {
       const pagination: IPagination = query.data.data.pagination;
       if (pagination.next_page !== pagination.current_page && pagination.next_page > pagination.current_page) {
         setRequestPath(constructPaginationLink(requestPath, pagination.next_page));
@@ -113,7 +130,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   };
 
   const prevPage = () => {
-    if (query.data?.data.pagination) {
+    if (query.data.data.pagination) {
       const pagination: IPagination = query.data.data.pagination;
       if (pagination.previous_page !== pagination.current_page && pagination.previous_page < pagination.current_page) {
         setRequestPath(constructPaginationLink(requestPath, pagination.previous_page));
@@ -184,7 +201,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   return {
     ...query,
-    isLoading: query.isLoading || isFutureQueriesPaused,
+    isLoading: (query.isLoading as boolean) || isFutureQueriesPaused,
     setRequestPath,
     nextPage,
     prevPage,

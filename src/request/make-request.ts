@@ -3,7 +3,7 @@ import axios from 'axios';
 import { axiosInstance } from './axios-instance';
 
 import { ContentType, HttpMethod } from './request.enum';
-import type { IMakeRequest } from './request.interface';
+import type { IMakeRequest, IRequestError, IRequestSuccess } from './request.interface';
 import { errorTransformer, successTransformer } from './transformer';
 
 export async function makeRequest<TResponse>({
@@ -16,7 +16,7 @@ export async function makeRequest<TResponse>({
   timeout,
   appFileConfig,
   onUploadProgress,
-}: IMakeRequest) {
+}: IMakeRequest): Promise<IRequestSuccess<TResponse> | IRequestError> {
   // check if file is included in mobile app environment and extract all file input to avoid
   // it being formatted to object using axios formData builder
   const isApp = appFileConfig?.isApp;
