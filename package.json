@@ -92,5 +92,6 @@
     "lodash.set": "^4.3.2",
     "url-search-params-polyfill": "^8.2.5",
     "zustand": "^4.4.6"
-  }
+  },
+  "packageManager": "yarn@1.22.22"
 }

@@ -11,7 +11,12 @@ import type { IRequestError, IRequestSuccess } from '../request/request.interfac
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
-export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
+export const usePatchRequest = <TResponse>({
+  path,
+  baseUrl,
+  headers,
+  isFormData,
+}: { path: string; isFormData?: boolean } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
   const globalHeaders = useHeaderStore((state) => state.headers);
@@ -27,6 +32,7 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     const requestOptions = {
       path: path,
       body: data,
+      isFormData,
       method: HttpMethod.PATCH,
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
