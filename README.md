@@ -19,13 +19,15 @@ But we were not discouraged. So, we set out to find a solution which led to the 
 - [✅] Post, Get, Patch Requests
 - [✅] Query key tracker to track dynamic query and help fetch query cache from any page
 - [✅] Persistent queries implementation (Not completed)
-- [❌] Put request
-- [❌] Generic return type (this is currently an issue if the API does not return object with the necessary properties required by the library)
-- [❌] Generic Pagination for any response without infinite queries
-- [❌] Infinite Get Query implementation (still using implementation meant for our use case)
+- [✅] Put request
+- [✅] Generic return type (this is currently an issue if the API does not return object with the necessary properties required by the library)
+- [✅] Generic Pagination for any response without infinite queries
+- [✅] Infinite Get Query implementation (still using implementation meant for our use case)
+- [✅] Enhanced middleware system with chainable middleware
+- [✅] Cross-framework compatibility (Vite, Next.js, CRA, etc.)
 - [❌] Server sent events
 - [❌] Socket implementations
-- [❌] Tests
+- [✅] Tests
 
 ## Installation
 
@@ -85,6 +87,9 @@ REACT_APP_API_TIMEOUT=300000
 NEXT_PUBLIC_API_URL='https://api.example.com'
 NEXT_PUBLIC_API_TIMEOUT=300000
 
+# For Vite (New!)
+VITE_API_URL='https://api.example.com'
+VITE_API_TIMEOUT=300000
 ```
 
 ```js
@@ -107,6 +112,68 @@ bootstrapQueryRequest(queryClient, {
   modelConfig: {
     idColumn: 'id', // used for useQueryModel to uniquely identify query data in a collection/array instance
   },
+  // NEW: Configure custom pagination
+  pagination: {
+    pageParamName: 'page', // default page parameter name
+    // Custom function to extract pagination data from response
+    extractPagination: (response) => {
+      // Example for a different API format
+      return {
+        current_page: response.data.meta.currentPage,
+        next_page: response.data.meta.currentPage + 1,
+        previous_page: response.data.meta.currentPage - 1,
+        size: response.data.meta.perPage,
+        page_count: response.data.meta.lastPage,
+        total: response.data.meta.total,
+      };
+    },
+    // Custom function to build pagination URL
+    buildPaginationUrl: (url, page) => {
+      // Custom implementation
+      const [pathname, queryString] = url.split('?');
+      const queryParams = new URLSearchParams(queryString || '');
+      queryParams.set('page', String(page));
+      return pathname + '?' + queryParams.toString();
+    },
+  },
+  // NEW: Enhanced middleware system
+  middleware: [
+    // Array of middleware functions that will be executed in order
+    async (context, next) => {
+      // Log request
+      console.log('Request:', context.path);
+
+      // Continue to next middleware or make the request
+      const response = await next();
+
+      // Log response
+      console.log('Response:', response);
+
+      return response;
+    },
+    // Authentication middleware
+    async (context, next) => {
+      // Add authentication token if available
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        context.headers = {
+          ...context.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+
+      // Continue to next middleware or make the request
+      const response = await next();
+
+      // Handle 401 errors
+      if (response.statusCode === 401) {
+        // Redirect to login or refresh token
+        window.location.href = '/login';
+      }
+
+      return response;
+    },
+  ],
 });
 ```
 
@@ -144,6 +211,111 @@ function LoginPage() {
 
   return <>{/** codes */}</>;
 }
+```
+
+## New Features
+
+### 1. Enhanced Middleware System
+
+The library now supports a chainable middleware system that allows you to intercept and modify requests and responses:
+
+```jsx
+// Define middleware functions
+const loggingMiddleware = async (context, next) => {
+  console.log('Request:', context.path);
+  const response = await next();
+  console.log('Response:', response);
+  return response;
+};
+
+const authMiddleware = async (context, next) => {
+  // Add authentication token
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    context.headers = {
+      ...context.headers,
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  return await next();
+};
+
+// Use middleware in bootstrap
+bootstrapQueryRequest(queryClient, {
+  middleware: [loggingMiddleware, authMiddleware],
+});
+```
+
+### 2. Configurable Pagination
+
+The library now supports custom pagination configuration to work with any API format:
+
+```jsx
+// Global pagination configuration
+bootstrapQueryRequest(queryClient, {
+  pagination: {
+    pageParamName: 'page', // default page parameter name
+    extractPagination: (response) => {
+      // Custom extraction for your API format
+      return {
+        current_page: response.data.meta.current,
+        next_page: response.data.meta.current + 1,
+        previous_page: response.data.meta.current - 1,
+        size: response.data.meta.per_page,
+        page_count: response.data.meta.last_page,
+        total: response.data.meta.total,
+      };
+    },
+    buildPaginationUrl: (url, page) => {
+      // Custom URL builder
+      const [pathname, queryString] = url.split('?');
+      const queryParams = new URLSearchParams(queryString || '');
+      queryParams.set('page', String(page));
+      return pathname + '?' + queryParams.toString();
+    },
+  },
+});
+
+// Per-request pagination configuration
+const { data, nextPage, prevPage } = useGetRequest({
+  path: '/api/users',
+  load: true,
+  paginationConfig: {
+    // Override global pagination config for this specific request
+    pageParamName: 'p', // Use 'p' instead of 'page' for this API
+    extractPagination: (response) => {
+      // Custom extraction for this specific API
+      return {
+        current_page: response.data.page,
+        next_page: response.data.page + 1,
+        previous_page: response.data.page - 1,
+        size: response.data.limit,
+        page_count: Math.ceil(response.data.total / response.data.limit),
+        total: response.data.total,
+      };
+    },
+  },
+});
+```
+
+### 3. Cross-Framework Compatibility
+
+The library now automatically detects and works with various React frameworks:
+
+- Create React App (CRA)
+- Next.js
+- Vite
+- React Native
+- Expo
+
+Environment variables are automatically detected based on the framework's conventions:
+
+```js
+// For CRA: REACT_APP_API_URL
+// For Next.js: NEXT_PUBLIC_API_URL
+// For Vite: VITE_API_URL
+// For React Native: Provided in the bootstrap config
 ```
 
 # Hooks
@@ -390,148 +562,4 @@ const { refetchQuery } = useRefetchQuery(['myQueryKey']);
 const { data } = await refetchQuery<MyDataType>();
 ```
 
-If you want to refetch a different query, you can pass a different `queryKey` parameter to `refetchQuery` function:
-
-```javascript
-const { data } = (await refetchQuery) < MyDataType > ['myOtherQueryKey'];
-```
-
-If you want to perform additional operations after refetching the query, you can use the `data` returned by `refetchQuery` function:
-
-```javascript
-const { data } = await refetchQuery<MyDataType>();
-// Perform additional operations with data
-```
-
-## Parameters
-
-- `queryKey`: An array of any types that uniquely identifies the query.
-
-## Return Value
-
-- `refetchQuery`: A function that refetches the query and retrieves updated data.
-
-## Example
-
-```javascript
-import { useQueryClient } from '@tanstack/react-query';
-import { useRefetchQuery } from '@ventlio/tanstack-query';
-
-const MyComponent = () => {
-  const queryClient = useQueryClient();
-
-  const { refetchQuery } = useRefetchQuery(['myQueryKey']);
-
-  const handleClick = async () => {
-    try {
-      // Refetch the query and retrieve updated data
-      const { data } = await refetchQuery<MyDataType>();
-
-      // Perform additional operations with data
-      console.log(data);
-    } catch (error) {
-      // Handle error
-      console.error(error);
-    }
-  };
-
-  return (
-    <button onClick={handleClick}>
-      Refetch Query
-    </button>
-  );
-};
-```
-
-# useKeyTrackerModel
-
-A custom hook that utilizes `useQueryClient` hook from `@tanstack/react-query` and `useState` hook from `react` to track a query key and retrieve query data.
-
-## Usage
-
-1. Import `useKeyTrackerModel` from @ventlio/tanstack-query:
-
-```javascript
-import { useKeyTrackerModel } from '@ventlio/tanstack-query';
-```
-
-2. Call `useKeyTrackerModel` with a `keyTracker` parameter which is a string that uniquely identifies the query key:
-
-```javascript
-const { refetchQuery, getQueryKey, queryKey, data } = useKeyTrackerModel < MyDataType > 'myKeyTracker';
-```
-
-3. Invoke `getQueryKey` function to retrieve the query key:
-
-```javascript
-const key = getQueryKey();
-```
-
-4. Invoke `refetchQuery` function to retrieve query data:
-
-```javascript
-const queryData = refetchQuery();
-```
-
-5. Use `queryKey` and `data` as needed in your component:
-
-```javascript
-return (
-  <div>
-    <p>Query Key: {queryKey}</p>
-    <p>Query Data: {data}</p>
-  </div>
-);
-```
-
-## Parameters
-
-- `keyTracker`: A string that uniquely identifies the query key.
-
-## Return Value
-
-- `refetchQuery`: A function that retrieves query data.
-- `getQueryKey`: A function that retrieves the query key.
-- `queryKey`: The query key.
-- `data`: The query data.
-
-## Example
-
-```javascript
-import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useKeyTrackerModel } from '@ventlio/tanstack-query';
-
-const MyComponent = () => {
-  const queryClient = useQueryClient();
-
-  const { refetchQuery, getQueryKey, queryKey, data } = useKeyTrackerModel < MyDataType > 'myKeyTracker';
-
-  const handleClick = async () => {
-    // Retrieve the query key
-    const key = getQueryKey();
-
-    // Retrieve query data
-    const queryData = refetchQuery();
-
-    // Perform additional operations with query key and data
-    console.log(key, queryData);
-  };
-
-  return (
-    <div>
-      <button onClick={handleClick}>Get Query Data</button>
-      <p>Query Key: {queryKey}</p>
-      <p>Query Data: {data}</p>
-    </div>
-  );
-};
-```
-
-## Contributing
-
-Contributions to this codebase are welcome. If you find any issues or have any suggestions, please feel free to create an issue or pull request.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+If you want to refetch a different query, you can pass a different `

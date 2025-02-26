@@ -1,0 +1,11 @@
+I will like to upgrade the codebase, if possible change the api design to suit with industry standards. This package will be used by millions of developers so it will be nice make it industry ready.
+
+Here are the things we need to handle.
+Make sure it works for every react app, vite, nextjs, cra and others.
+Make sure it works with ReactNative and Expo.
+Make use of env values on if the framework supports it.
+Have a global way to manage requests, like a middleware, we already have this in the system but can be improved.
+Set request headers on runtime and it get used.
+Manage pagination properly, since different backend api manages their pagination differently, this cannot be encoded in the system. 
+There should be a way to define a global type for pagination and another way to define functions that will run on pagination, like nextPage, prevPage, currentPage, totalPage, then there will be a way to pass the function into the library, when this package is installed you have to create these functions.
+Request configs like headers, baseUrl, timeouts and others should be able to be updated on fly.

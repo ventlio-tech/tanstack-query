@@ -5,9 +5,14 @@ import { useEnvironmentVariables } from '../config';
 import { useStore } from '@tanstack/react-store';
 import { bootStore } from '../config/bootStore';
 import { IRequestError, IRequestSuccess, makeRequest } from '../request';
+import { executeMiddlewareChain } from '../request/make-request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
+import type { MiddlewareContext, MiddlewareNext } from '../types';
 import { DefaultRequestOptions, IPagination, TanstackQueryOption } from './queries.interface';
 
+/**
+ * Hook for making GET requests with pagination support
+ */
 export const useGetRequest = <TResponse extends Record<string, any>>({
   path,
   load = false,
@@ -15,18 +20,24 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   keyTracker,
   baseUrl,
   headers,
+  paginationConfig,
 }: {
   path: string;
   load?: boolean;
   queryOptions?: TanstackQueryOption<TResponse>;
   keyTracker?: string;
+  paginationConfig?: {
+    extractPagination?: (response: IRequestSuccess<TResponse>) => IPagination | undefined;
+    buildPaginationUrl?: (url: string, page: number) => string;
+    pageParamName?: string;
+  };
 } & DefaultRequestOptions) => {
   const [requestPath, setRequestPath] = useState<string>(path);
   const [options, setOptions] = useState<any>(queryOptions);
   const [page, setPage] = useState<number>(1);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { middleware } = useStore(bootStore);
+  const { middleware, pagination: globalPaginationConfig } = useStore(bootStore);
 
   const globalHeaders = useHeaderStore((state) => state.headers);
 
@@ -38,6 +49,15 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   queryClient = useMemo(() => queryClient, []);
+
+  // Merge global and local pagination config
+  const pagination = useMemo(
+    () => ({
+      ...globalPaginationConfig,
+      ...paginationConfig,
+    }),
+    [globalPaginationConfig, paginationConfig]
+  );
 
   const sendRequest = async (
     res: (
@@ -56,20 +76,25 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       timeout: TIMEOUT,
     };
 
+    // Create the final handler that makes the actual request
+    const finalHandler: MiddlewareNext<TResponse> = async (options) => {
+      const finalOptions = options ? { ...requestOptions, ...options } : requestOptions;
+      return await makeRequest<TResponse>(finalOptions);
+    };
+
     let getResponse: IRequestError | IRequestSuccess<TResponse>;
-    if (middleware) {
-      // perform global middleware
-      getResponse = await middleware(
-        async (middlewareOptions) =>
-          await makeRequest<TResponse>(
-            middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
-          ),
-        {
-          path,
-          baseUrl: baseUrl ?? API_URL,
-        }
-      );
+
+    // If middleware is available, execute the middleware chain
+    if (middleware && Array.isArray(middleware) && middleware.length > 0) {
+      const context: MiddlewareContext<TResponse> = {
+        baseUrl: baseUrl ?? API_URL,
+        path: requestUrl,
+        options: requestOptions,
+      };
+
+      getResponse = await executeMiddlewareChain<TResponse>(middleware, context, finalHandler);
     } else {
+      // Otherwise, just make the request directly
       getResponse = await makeRequest<TResponse>(requestOptions);
     }
 
@@ -105,41 +130,88 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     }
   }, [keyTracker, requestPath, queryClient, queryOptions?.staleTime]);
 
+  /**
+   * Extract pagination data from response using configured extractor
+   */
+  const getPaginationData = (response: IRequestSuccess<TResponse>): IPagination | undefined => {
+    // Use the configured pagination extractor or fall back to default
+    const extractPagination =
+      pagination.extractPagination ||
+      ((res) => {
+        if ('pagination' in res.data) {
+          return res.data.pagination as IPagination;
+        }
+        return undefined;
+      });
+
+    return extractPagination(response);
+  };
+
+  /**
+   * Navigate to the next page if available
+   */
   const nextPage = () => {
-    if (query.data.data.pagination) {
-      const pagination: IPagination = query.data.data.pagination;
-      if (pagination.next_page !== pagination.current_page && pagination.next_page > pagination.current_page) {
-        setRequestPath(constructPaginationLink(requestPath, pagination.next_page));
-      }
+    // The linter thinks query.data is always falsy, but we know it can be defined after a successful query
+    // Let's restructure to avoid the conditional
+    const paginationData = query.data && getPaginationData(query.data);
+    if (!paginationData) return;
+
+    if (
+      paginationData.next_page !== paginationData.current_page &&
+      paginationData.next_page > paginationData.current_page
+    ) {
+      setRequestPath(constructPaginationLink(requestPath, paginationData.next_page));
     }
   };
 
+  /**
+   * Navigate to the previous page if available
+   */
   const prevPage = () => {
-    if (query.data.data.pagination) {
-      const pagination: IPagination = query.data.data.pagination;
-      if (pagination.previous_page !== pagination.current_page && pagination.previous_page < pagination.current_page) {
-        setRequestPath(constructPaginationLink(requestPath, pagination.previous_page));
-      }
+    // The linter thinks query.data is always falsy, but we know it can be defined after a successful query
+    // Let's restructure to avoid the conditional
+    const paginationData = query.data && getPaginationData(query.data);
+    if (!paginationData) return;
+
+    if (
+      paginationData.previous_page !== paginationData.current_page &&
+      paginationData.previous_page < paginationData.current_page
+    ) {
+      setRequestPath(constructPaginationLink(requestPath, paginationData.previous_page));
     }
   };
 
+  /**
+   * Construct a pagination URL using the configured builder
+   */
   const constructPaginationLink = (link: string, pageNumber: number) => {
-    const [pathname, queryString] = link.split('?');
-    const queryParams = new URLSearchParams(queryString);
+    // Use the configured pagination URL builder or fall back to default
+    const buildPaginationUrl =
+      pagination.buildPaginationUrl ||
+      ((url, page) => {
+        const [pathname, queryString] = url.split('?');
+        const queryParams = new URLSearchParams(queryString || '');
+        const pageParamName = pagination.pageParamName || 'page';
 
-    const oldPage = Number(queryParams.get('page'));
+        const oldPage = Number(queryParams.get(pageParamName));
+        queryParams.set(pageParamName, String(page));
 
-    queryParams.set('page', pageNumber as any);
+        const newUrl = pathname + '?' + queryParams.toString();
 
-    link = pathname + '?' + queryParams.toString();
+        // only update page when pagination number changed
+        if (oldPage !== pageNumber) {
+          setPage(pageNumber);
+        }
 
-    // only update page when pagination number changed
-    if (oldPage !== pageNumber) {
-      setPage(pageNumber);
-    }
-    return link;
+        return newUrl;
+      });
+
+    return buildPaginationUrl(link, pageNumber);
   };
 
+  /**
+   * Navigate to a specific page
+   */
   const gotoPage = (pageNumber: number) => {
     setRequestPath(constructPaginationLink(requestPath, pageNumber));
   };
@@ -194,5 +266,9 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     gotoPage,
     page,
     queryKey: [requestPath, {}],
+    // Add pagination data accessor - restructured to avoid linter error
+    getPaginationData: function () {
+      return query.data ? getPaginationData(query.data) : undefined;
+    },
   };
 };
