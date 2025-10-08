@@ -1,9 +1,7 @@
 import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
-import { useStore } from '@tanstack/react-store';
 import { useEffect, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
-import { bootStore } from '../config/bootStore';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
@@ -14,8 +12,8 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
   const [requestPath, setRequestPath] = useState<string>('');
   const [options, setOptions] = useState<any>();
 
-  const { middleware } = useStore(bootStore);
-
+  // const { middleware: middlewares } = useStore(bootStore);
+  // const [middleware] = middlewares as unknown as MiddlewareFunction[];
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 
   const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
@@ -36,22 +34,22 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
       timeout: TIMEOUT,
     };
 
-    let deleteResponse: IRequestError | IRequestSuccess<TResponse>;
-    if (middleware) {
-      // perform global middleware
-      deleteResponse = await middleware(
-        async (middlewareOptions) =>
-          await makeRequest<TResponse>(
-            middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
-          ),
-        {
-          path: requestUrl,
-          baseUrl: baseUrl ?? API_URL,
-        }
-      );
-    } else {
-      deleteResponse = await makeRequest<TResponse>(requestOptions);
-    }
+    // let deleteResponse: IRequestError | IRequestSuccess<TResponse>;
+    // if (middleware) {
+    //   // perform global middleware
+    //   deleteResponse = await middleware(
+    //     async (middlewareOptions) =>
+    //       await makeRequest<TResponse>(
+    //         middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
+    //       ),
+    //     {
+    //       path: requestUrl,
+    //       baseUrl: baseUrl ?? API_URL,
+    //     }
+    //   );
+    // } else {
+    const deleteResponse = await makeRequest<TResponse>(requestOptions);
+    // }
 
     if (deleteResponse.status) {
       res(deleteResponse as IRequestSuccess<TResponse>);

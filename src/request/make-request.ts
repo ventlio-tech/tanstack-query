@@ -2,34 +2,126 @@ import type { AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
 import axios from 'axios';
 import { axiosInstance } from './axios-instance';
 
+import type { MiddlewareContext, MiddlewareFunction, MiddlewareNext } from '../types';
 import { ContentType, HttpMethod } from './request.enum';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from './request.interface';
 import { errorTransformer, successTransformer } from './transformer';
 
-export async function makeRequest<TResponse>({
-  body = {},
-  method = HttpMethod.GET,
-  path,
-  isFormData,
-  headers = {},
-  baseURL,
-  timeout,
-  appFileConfig,
-  onUploadProgress,
-}: IMakeRequest): Promise<IRequestSuccess<TResponse> | IRequestError> {
+/**
+ * Execute a chain of middleware functions
+ */
+export async function executeMiddlewareChain<T>(
+  middlewares: MiddlewareFunction[],
+  context: MiddlewareContext<T>,
+  finalHandler: MiddlewareNext<T>
+): Promise<IRequestSuccess<T> | IRequestError> {
+  // Create a chain of middleware functions
+  const chain = middlewares.reduceRight((next: MiddlewareNext<T>, middleware: MiddlewareFunction<T>) => {
+    return (options) => {
+      // Update context with new options if provided
+      const updatedContext = options ? { ...context, options: { ...context.options, ...options } } : context;
+      return middleware(updatedContext, next);
+    };
+  }, finalHandler);
+
+  // Execute the middleware chain
+  return await chain(undefined);
+}
+
+/**
+ * Make an HTTP request with middleware support
+ *
+ * @param requestOptions - Request options
+ * @param middlewares - Optional array of middleware functions
+ */
+export async function makeRequest<TResponse>(
+  requestOptions: IMakeRequest,
+  middlewares?: MiddlewareFunction[]
+): Promise<IRequestSuccess<TResponse> | IRequestError> {
+  const {
+    body = {},
+    method = HttpMethod.GET,
+    path,
+    isFormData,
+    headers = {},
+    baseURL,
+    timeout,
+    appFileConfig,
+    onUploadProgress,
+  } = requestOptions;
+
   // check if file is included in mobile app environment and extract all file input to avoid
   // it being formatted to object using axios formData builder
   const isApp = appFileConfig?.isApp;
   const appFiles: Record<string, string> = isApp ? getAppFiles(body, appFileConfig.fileSelectors) : {};
 
   // configure body
-  body = (isFormData ? axios.toFormData(body as FormData) : body) as FormData;
+  const processedBody = (isFormData ? axios.toFormData(body as FormData) : body) as FormData;
 
-  // configure request header1
-  configureRequestHeader(isFormData, headers, isApp, appFiles, body);
+  // configure request header
+  configureRequestHeader(isFormData, headers, isApp, appFiles, processedBody);
 
+  // Create the final handler that makes the actual request
+  const finalHandler: MiddlewareNext<TResponse> = async (options) => {
+    const finalRequestOptions = options
+      ? {
+          ...requestOptions,
+          body: processedBody,
+          ...options,
+        }
+      : {
+          ...requestOptions,
+          body: processedBody,
+        };
+
+    return await performRequest<TResponse>(finalRequestOptions);
+  };
+
+  // If middleware is available, execute the middleware chain
+  if (middlewares && middlewares.length > 0) {
+    const context: MiddlewareContext<TResponse> = {
+      baseUrl: baseURL,
+      path,
+      body: body as Record<string, any>,
+      method,
+      headers,
+      options: {
+        baseURL,
+        timeout,
+        path,
+        body: processedBody,
+        method,
+        isFormData,
+        headers,
+        appFileConfig,
+        onUploadProgress,
+      },
+    };
+
+    return await executeMiddlewareChain<TResponse>(middlewares, context, finalHandler);
+  }
+
+  // Otherwise, just make the request directly
+  return await finalHandler(undefined);
+}
+
+/**
+ * Perform the actual HTTP request
+ */
+async function performRequest<TResponse>({
+  body,
+  method,
+  path,
+  isFormData,
+  headers,
+  baseURL,
+  timeout,
+  appFileConfig,
+  onUploadProgress,
+}: IMakeRequest): Promise<IRequestSuccess<TResponse> | IRequestError> {
   try {
     const axiosRequest = axiosInstance({ baseURL, headers, timeout });
+    const isApp = appFileConfig?.isApp;
 
     const axiosRequestConfig: AxiosRequestConfig<Record<string, any>> = {
       url: path,
@@ -37,7 +129,12 @@ export async function makeRequest<TResponse>({
       onUploadProgress,
     };
 
-    if (Object.keys(body).length > 0 || (isFormData && !isApp && [...body.keys()].length > 0)) {
+    // Check if body exists and is not null
+    if (
+      body &&
+      ((typeof body === 'object' && Object.keys(body).length > 0) ||
+        (isFormData && !isApp && body instanceof FormData && Array.from(body.keys()).length > 0))
+    ) {
       axiosRequestConfig.data = body;
     }
 

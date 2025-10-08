@@ -11,12 +11,7 @@ import type { IRequestError, IRequestSuccess } from '../request/request.interfac
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
 import type { DefaultRequestOptions } from './queries.interface';
 
-export const usePatchRequest = <TResponse>({
-  path,
-  baseUrl,
-  headers,
-  isFormData,
-}: { path: string; isFormData?: boolean } & DefaultRequestOptions) => {
+export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
   const globalHeaders = useHeaderStore((state) => state.headers);
@@ -24,7 +19,7 @@ export const usePatchRequest = <TResponse>({
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 
   const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
-  const { middleware, context } = useStore(bootStore);
+  const { context } = useStore(bootStore);
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
     // get request headers
@@ -32,7 +27,6 @@ export const usePatchRequest = <TResponse>({
     const requestOptions = {
       path: path,
       body: data,
-      isFormData,
       method: HttpMethod.PATCH,
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
@@ -40,22 +34,25 @@ export const usePatchRequest = <TResponse>({
       onUploadProgress,
     };
 
-    let patchResponse: IRequestError | IRequestSuccess<TResponse>;
-    if (middleware) {
-      // perform global middleware
-      const middlewareResponse = await middleware(
-        async (options) => await makeRequest<TResponse>(options ? { ...requestOptions, ...options } : requestOptions),
-        {
-          path,
-          baseUrl: baseUrl ?? API_URL,
-          body: data,
-        }
-      );
+    // let patchResponse: IRequestError | IRequestSuccess<TResponse>;
+    // if (middleware) {
+    //   // perform global middleware
+    //   const middlewareResponse = await middleware(
+    //     async (options) =>
+    //       await makeRequest<TResponse>(
+    //         options ? { ...requestOptions, ...options } : requestOptions
+    //       ),
+    //     {
+    //       path,
+    //       baseUrl: baseUrl ?? API_URL,
+    //       body: data,
+    //     }
+    //   );
 
-      patchResponse = middlewareResponse;
-    } else {
-      patchResponse = await makeRequest<TResponse>(requestOptions);
-    }
+    //   patchResponse = middlewareResponse;
+    // } else {
+    const patchResponse = await makeRequest<TResponse>(requestOptions);
+    // }
     if (patchResponse.status) {
       // scroll to top after success
       if (context !== 'app') {

@@ -1,6 +1,6 @@
 {
   "name": "@ventlio/tanstack-query",
-  "version": "0.5.8",
+  "version": "0.5.13",
   "license": "MIT",
   "main": "dist/index.js",
   "contributors": [
@@ -91,7 +91,6 @@
     "lodash.result": "^4.5.2",
     "lodash.set": "^4.3.2",
     "url-search-params-polyfill": "^8.2.5",
-    "zustand": "^4.4.6"
-  },
-  "packageManager": "yarn@1.22.22"
+    "zustand": "^5.0.4"
+  }
 }

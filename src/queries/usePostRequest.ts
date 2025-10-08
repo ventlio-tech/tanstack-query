@@ -25,7 +25,7 @@ export const usePostRequest = <TResponse>({
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { middleware, context } = useStore(bootStore);
+  const { context } = useStore(bootStore);
 
   const globalHeaders = useHeaderStore((state) => state.headers);
   const { isApp } = useReactNativeEnv();
@@ -61,20 +61,23 @@ export const usePostRequest = <TResponse>({
       ...requestConfig,
     };
 
-    let postResponse: IRequestError | IRequestSuccess<TResponse>;
-    if (middleware) {
-      // perform global middleware
-      postResponse = await middleware(
-        async (options) => await makeRequest<TResponse>(options ? { ...requestOptions, ...options } : requestOptions),
-        {
-          path,
-          baseUrl: baseUrl ?? API_URL,
-          body: data,
-        }
-      );
-    } else {
-      postResponse = await makeRequest<TResponse>(requestOptions);
-    }
+    // let postResponse: IRequestError | IRequestSuccess<TResponse>;
+    // if (middleware) {
+    //   // perform global middleware
+    //   postResponse = await middleware(
+    //     async (options) =>
+    //       await makeRequest<TResponse>(
+    //         options ? { ...requestOptions, ...options } : requestOptions
+    //       ),
+    //     {
+    //       path,
+    //       baseUrl: baseUrl ?? API_URL,
+    //       body: data,
+    //     }
+    //   );
+    // } else {
+    const postResponse = await makeRequest<TResponse>(requestOptions);
+    // }
 
     if (postResponse.status) {
       // scroll to top after success

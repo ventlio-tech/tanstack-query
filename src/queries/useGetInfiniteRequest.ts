@@ -37,7 +37,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   const [requestPath, setRequestPath] = useState<string>(path);
 
   const [options, setOptions] = useState<any>(queryOptions);
-  const { middleware } = useStore(bootStore);
+  useStore(bootStore);
 
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 
@@ -68,22 +68,22 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
         timeout: TIMEOUT,
       };
 
-      let getResponse: IRequestError | IRequestSuccess<TResponse>;
-      if (middleware) {
-        // perform global middleware
-        getResponse = await middleware(
-          async (middlewareOptions) =>
-            await makeRequest<TResponse>(
-              middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
-            ),
-          {
-            path,
-            baseUrl: baseUrl ?? API_URL,
-          }
-        );
-      } else {
-        getResponse = await makeRequest<TResponse>(requestOptions);
-      }
+      // let getResponse: IRequestError | IRequestSuccess<TResponse>;
+      // if (middleware) {
+      //   // perform global middleware
+      //   getResponse = await middleware(
+      //     async (middlewareOptions) =>
+      //       await makeRequest<TResponse>(
+      //         middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
+      //       ),
+      //     {
+      //       path,
+      //       baseUrl: baseUrl ?? API_URL,
+      //     }
+      //   );
+      // } else {
+      const getResponse = await makeRequest<TResponse>(requestOptions);
+      // }
 
       if (getResponse.status) {
         res(getResponse as IRequestSuccess<TResponse & { pagination: Pagination }>);

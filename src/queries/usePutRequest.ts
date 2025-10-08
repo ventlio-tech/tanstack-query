@@ -20,7 +20,7 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
 
   const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
 
-  const { middleware, context } = useStore(bootStore);
+  const { context } = useStore(bootStore);
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
     // get request headers
@@ -35,20 +35,21 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
       onUploadProgress,
     };
 
-    let putResponse: IRequestError | IRequestSuccess<TResponse>;
-    if (middleware) {
-      // perform global middleware
-      putResponse = await middleware(
-        async (options) => await makeRequest<TResponse>(options ? { ...requestOptions, ...options } : requestOptions),
-        {
-          path,
-          baseUrl: baseUrl ?? API_URL,
-          body: data,
-        }
-      );
-    } else {
-      putResponse = await makeRequest<TResponse>(requestOptions);
-    }
+    // let putResponse: IRequestError | IRequestSuccess<TResponse>;
+    // if (middleware) {
+    //   // perform global middleware
+    //   putResponse = await middleware(
+    //     async (options) =>
+    //       await makeRequest<TResponse>(options ? { ...requestOptions, ...options } : requestOptions),
+    //     {
+    //       path,
+    //       baseUrl: baseUrl ?? API_URL,
+    //       body: data,
+    //     }
+    //   );
+    // } else {
+    const putResponse = await makeRequest<TResponse>(requestOptions);
+    // }
     if (putResponse.status) {
       // scroll to top after success
       if (context !== 'app') {

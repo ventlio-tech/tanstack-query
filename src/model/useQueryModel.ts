@@ -40,7 +40,7 @@ export const useQueryModel = <T>(keyTracker: string): QueryModelBuilder<T> => {
     }
 
     if (!path) {
-      return Array.isArray(data) ? data : [data];
+      return Array.isArray(data) ? data : [data as any];
     }
 
     return result<T[]>(data, path, []);
