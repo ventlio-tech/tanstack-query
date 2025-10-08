@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useStore } from '@tanstack/react-store';
-import result from 'lodash.result';
 import { default as lodashSet } from 'lodash.set';
 import { bootStore } from '../config/bootStore';
+import { result } from '../helpers';
 import type { QueryModelAddPosition, QueryModelBuilder } from './model.interface';
 import { useKeyTrackerModel } from './useKeyTrackerModel';
 
