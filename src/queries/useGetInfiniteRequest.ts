@@ -35,6 +35,8 @@ interface UseGetInfiniteRequestOptions<TResponse> extends DefaultRequestOptions 
     refetchOnWindowFocus?: boolean;
     refetchOnMount?: boolean;
     retry?: number | boolean;
+    /** @deprecated Query key is auto-generated from path. This option is ignored. */
+    queryKey?: readonly unknown[];
   };
 }
 
@@ -170,6 +172,10 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     [pagination]
   );
 
+  // Destructure queryKey from queryOptions since it's deprecated and auto-generated
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { queryKey: _deprecatedQueryKey, ...restQueryOptions } = queryOptions ?? {};
+
   // The infinite query
   const query = useInfiniteQuery<
     IRequestSuccess<TResponse>,
@@ -187,7 +193,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     getNextPageParam,
     getPreviousPageParam,
     enabled: load === true && !isFutureQueriesPaused,
-    ...queryOptions,
+    ...restQueryOptions,
   });
 
   // Track query key for external reference
@@ -228,6 +234,21 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   }, [query]);
 
   /**
+   * Fetch data with a new URL path (for dynamic filtering)
+   * This invalidates the current query and fetches fresh data with the new path
+   * @deprecated Consider using refetch() with updated path prop instead
+   */
+  const get = useCallback(
+    async (newPath: string) => {
+      // Update the query key and refetch
+      queryClient.invalidateQueries({ queryKey: [path, {}] });
+      // Make a direct request with the new path
+      return executeRequest(newPath);
+    },
+    [queryClient, path, executeRequest]
+  );
+
+  /**
    * Get all items from all pages flattened into a single array
    */
   const getAllItems = useCallback(
@@ -253,6 +274,8 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     data: query.data,
     error: query.error,
     isLoading: query.isLoading || isFutureQueriesPaused,
+    /** @deprecated Use isLoading instead */
+    isInitialLoading: query.isLoading || isFutureQueriesPaused,
     isError: query.isError,
     isSuccess: query.isSuccess,
     isFetching: query.isFetching,
@@ -268,6 +291,8 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     fetchNextPage,
     fetchPreviousPage,
     refetch,
+    /** @deprecated Use refetch() instead */
+    get,
 
     // Utilities
     getAllItems,
