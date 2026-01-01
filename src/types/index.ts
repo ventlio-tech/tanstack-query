@@ -1,6 +1,6 @@
 import type { AxiosProgressEvent, RawAxiosRequestHeaders } from 'axios';
-import type { AppFileConfig, HttpMethod, IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import type { IPagination } from '../queries';
+import type { AppFileConfig, HttpMethod, IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 
 // Enhanced middleware types
 export type MiddlewareFunction<T = any> = (
@@ -37,6 +37,22 @@ export interface BootstrapConfig {
   middleware?: MiddlewareFunction[] | LegacyMiddlewareFunction;
   // Custom pagination configuration
   pagination?: PaginationConfig;
+  /**
+   * Optional function to provide headers synchronously.
+   * This is called on every request to get the current headers.
+   * Use this to read auth tokens from cookies or other persistent storage.
+   * The returned headers are merged with headers from the header store.
+   *
+   * Example:
+   * ```
+   * headerProvider: () => {
+   *   const token = getCookie('authToken');
+   *   const spaceId = getCookie('spaceId');
+   *   return token ? { Authorization: `Bearer ${token}`, } : undefined;
+   * }
+   * ```
+   */
+  headerProvider?: () => QueryHeaders;
 }
 
 export interface PaginationConfig {

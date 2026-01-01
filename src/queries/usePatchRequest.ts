@@ -1,7 +1,7 @@
 import type { MutateOptions } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import { useStore } from '@tanstack/react-store';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
 import { bootStore } from '../config/bootStore';
 import { scrollToTop } from '../helpers';
@@ -14,12 +14,19 @@ import type { DefaultRequestOptions } from './queries.interface';
 export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
-  const globalHeaders = useHeaderStore((state) => state.headers);
+  const { context, headerProvider } = useStore(bootStore);
+
+  const storeHeaders = useHeaderStore((state) => state.headers);
+
+  // Get headers from both the store and the headerProvider (if configured)
+  const globalHeaders = useMemo(() => {
+    const providerHeaders = headerProvider ? headerProvider() : undefined;
+    return { ...providerHeaders, ...storeHeaders };
+  }, [storeHeaders, headerProvider]);
 
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 
   const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
-  const { context } = useStore(bootStore);
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
     // get request headers

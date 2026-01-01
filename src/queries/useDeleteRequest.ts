@@ -1,7 +1,9 @@
 import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useStore } from '@tanstack/react-store';
+import { useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
+import { bootStore } from '../config/bootStore';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
@@ -12,15 +14,20 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
   const [requestPath, setRequestPath] = useState<string>('');
   const [options, setOptions] = useState<any>();
 
-  // const { middleware: middlewares } = useStore(bootStore);
-  // const [middleware] = middlewares as unknown as MiddlewareFunction[];
+  const { headerProvider } = useStore(bootStore);
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 
   const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const globalHeaders = useHeaderStore((state) => state.headers);
+  const storeHeaders = useHeaderStore((state) => state.headers);
+
+  // Get headers from both the store and the headerProvider (if configured)
+  const globalHeaders = useMemo(() => {
+    const providerHeaders = headerProvider ? headerProvider() : undefined;
+    return { ...providerHeaders, ...storeHeaders };
+  }, [storeHeaders, headerProvider]);
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, queryKey: QueryKey) => {
     const [url] = queryKey;

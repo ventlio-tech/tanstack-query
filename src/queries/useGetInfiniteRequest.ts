@@ -33,11 +33,17 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   keyTracker?: string;
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const globalHeaders = useHeaderStore((state) => state.headers);
-  const [requestPath, setRequestPath] = useState<string>(path);
+  const { headerProvider } = useStore(bootStore);
+  const storeHeaders = useHeaderStore((state) => state.headers);
 
+  // Get headers from both the store and the headerProvider (if configured)
+  const globalHeaders = useMemo(() => {
+    const providerHeaders = headerProvider ? headerProvider() : undefined;
+    return { ...providerHeaders, ...storeHeaders };
+  }, [storeHeaders, headerProvider]);
+
+  const [requestPath, setRequestPath] = useState<string>(path);
   const [options, setOptions] = useState<any>(queryOptions);
-  useStore(bootStore);
 
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 

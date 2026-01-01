@@ -37,9 +37,17 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const [page, setPage] = useState<number>(1);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { middleware, pagination: globalPaginationConfig } = useStore(bootStore);
+  const { middleware, pagination: globalPaginationConfig, headerProvider } = useStore(bootStore);
 
-  const globalHeaders = useHeaderStore((state) => state.headers);
+  const storeHeaders = useHeaderStore((state) => state.headers);
+
+  // Get headers from both the store and the headerProvider (if configured)
+  // headerProvider allows reading from cookies/localStorage synchronously
+  const globalHeaders = useMemo(() => {
+    const providerHeaders = headerProvider ? headerProvider() : undefined;
+    // Merge: store headers take precedence over provider headers
+    return { ...providerHeaders, ...storeHeaders };
+  }, [storeHeaders, headerProvider]);
 
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
 

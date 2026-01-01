@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEnvironmentVariables, useReactNativeEnv } from '../config';
 
 import { useStore } from '@tanstack/react-store';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { bootStore } from '../config/bootStore';
 import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
@@ -25,9 +25,17 @@ export const usePostRequest = <TResponse>({
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { context } = useStore(bootStore);
+  const { context, headerProvider } = useStore(bootStore);
 
-  const globalHeaders = useHeaderStore((state) => state.headers);
+  const storeHeaders = useHeaderStore((state) => state.headers);
+
+  // Get headers from both the store and the headerProvider (if configured)
+  // headerProvider allows reading from cookies/localStorage synchronously
+  const globalHeaders = useMemo(() => {
+    const providerHeaders = headerProvider ? headerProvider() : undefined;
+    // Merge: store headers take precedence over provider headers
+    return { ...providerHeaders, ...storeHeaders };
+  }, [storeHeaders, headerProvider]);
   const { isApp } = useReactNativeEnv();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
   const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
