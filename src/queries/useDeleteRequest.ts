@@ -82,5 +82,7 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     isLoading: mutation.isPending || isFutureMutationsPaused,
     // For backward compatibility - mutations don't have initial loading state
     isInitialLoading: false,
+    //@deprecated
+    isFetching: mutation.isPending,
   };
 };
