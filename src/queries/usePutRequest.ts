@@ -4,7 +4,6 @@ import { useStore } from '@tanstack/react-store';
 import { useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
 import { bootStore } from '../config/bootStore';
-import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import { HttpMethod, makeRequest } from '../request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
@@ -14,7 +13,7 @@ import type { DefaultRequestOptions } from './queries.interface';
 export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
-  const { context, headerProvider } = useStore(bootStore);
+  const { headerProvider } = useStore(bootStore);
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -57,16 +56,8 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
     const putResponse = await makeRequest<TResponse>(requestOptions);
     // }
     if (putResponse.status) {
-      // scroll to top after success
-      if (context !== 'app') {
-        scrollToTop();
-      }
       res(putResponse as IRequestSuccess<TResponse>);
     } else {
-      // scroll to top after error
-      if (context !== 'app') {
-        scrollToTop();
-      }
       rej(putResponse);
     }
   };

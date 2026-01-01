@@ -4,7 +4,6 @@ import { useStore } from '@tanstack/react-store';
 import { useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
 import { bootStore } from '../config/bootStore';
-import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import { HttpMethod, makeRequest } from '../request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
@@ -14,7 +13,7 @@ import type { DefaultRequestOptions } from './queries.interface';
 export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
-  const { context, headerProvider } = useStore(bootStore);
+  const { headerProvider } = useStore(bootStore);
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -61,16 +60,8 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     const patchResponse = await makeRequest<TResponse>(requestOptions);
     // }
     if (patchResponse.status) {
-      // scroll to top after success
-      if (context !== 'app') {
-        scrollToTop();
-      }
       res(patchResponse as IRequestSuccess<TResponse>);
     } else {
-      // scroll to top after error
-      if (context !== 'app') {
-        scrollToTop();
-      }
       rej(patchResponse);
     }
   };

@@ -1,5 +1,5 @@
-import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
-import { useQuery } from '@tanstack/react-query';
+import type { MutateOptions } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useStore } from '@tanstack/react-store';
 import { useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
@@ -11,13 +11,11 @@ import type { DefaultRequestOptions } from './queries.interface';
 
 export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOptions) => {
   const { baseUrl, headers } = deleteOptions ?? {};
-  const [requestPath, setRequestPath] = useState<string>('');
-  const [options, setOptions] = useState<any>();
 
   const { headerProvider } = useStore(bootStore);
-  const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
+  const [requestPayload, setRequestPayload] = useState<{ path: string; options?: any }>();
 
-  const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
+  const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
@@ -29,90 +27,60 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     return { ...providerHeaders, ...storeHeaders };
   }, [storeHeaders, headerProvider]);
 
-  const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, queryKey: QueryKey) => {
-    const [url] = queryKey;
-    const requestUrl = (url ?? requestPath) as string;
-
+  const sendRequest = async (path: string): Promise<IRequestSuccess<TResponse>> => {
     const requestOptions = {
-      path: requestUrl,
+      path,
       headers: { ...globalHeaders, ...headers },
       baseURL: baseUrl ?? API_URL,
       method: HttpMethod.DELETE,
       timeout: TIMEOUT,
     };
 
-    // let deleteResponse: IRequestError | IRequestSuccess<TResponse>;
-    // if (middleware) {
-    //   // perform global middleware
-    //   deleteResponse = await middleware(
-    //     async (middlewareOptions) =>
-    //       await makeRequest<TResponse>(
-    //         middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
-    //       ),
-    //     {
-    //       path: requestUrl,
-    //       baseUrl: baseUrl ?? API_URL,
-    //     }
-    //   );
-    // } else {
     const deleteResponse = await makeRequest<TResponse>(requestOptions);
-    // }
 
     if (deleteResponse.status) {
-      res(deleteResponse as IRequestSuccess<TResponse>);
+      return deleteResponse as IRequestSuccess<TResponse>;
     } else {
-      rej(deleteResponse);
+      throw deleteResponse;
     }
   };
 
-  const query = useQuery<any, any, IRequestSuccess<TResponse>>({
-    queryKey: [requestPath, {}],
-    queryFn: ({ queryKey }) =>
-      new Promise<IRequestSuccess<TResponse> | IRequestError>((res, rej) => sendRequest(res, rej, queryKey)),
-    enabled: false,
-    ...options,
+  // Use mutation instead of query for DELETE operations
+  const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError, { path: string }>({
+    mutationFn: async ({ path }) => sendRequest(path),
   });
 
-  const updatedPathAsync = async (link: string) => {
-    return setRequestPath(link);
-  };
-
-  const setOptionsAsync = async (fetchOptions: any) => {
-    return setOptions(fetchOptions);
-  };
-
+  /**
+   * Perform a DELETE request to the specified path
+   * @param path - The API path to send the DELETE request to
+   * @param options - Optional mutation options (onSuccess, onError, etc.)
+   */
   const destroy = async (
-    link: string,
-    internalDeleteOptions?: UseQueryOptions<
-      IRequestSuccess<TResponse | undefined>,
-      IRequestError,
-      IRequestSuccess<TResponse | undefined>,
-      Array<any>
-    > & { cached?: boolean }
+    path: string,
+    options?: MutateOptions<IRequestSuccess<TResponse>, IRequestError, { path: string }, unknown>
   ): Promise<IRequestSuccess<TResponse> | undefined> => {
-    if (!isFutureQueriesPaused) {
-      // set enabled to be true for every delete
-      internalDeleteOptions = internalDeleteOptions
-        ? { ...internalDeleteOptions, queryKey: [link, {}], enabled: true }
-        : { queryKey: [link, {}], enabled: true };
-
-      await setOptionsAsync(internalDeleteOptions);
-      await updatedPathAsync(link);
-
-      return query.data;
+    if (!isFutureMutationsPaused) {
+      return mutation.mutateAsync({ path }, options);
     } else {
-      setRequestPayload({ link, internalDeleteOptions });
+      setRequestPayload({ path, options });
       return undefined;
     }
   };
 
+  // Resume paused requests when mutations are unpaused
   useEffect(() => {
-    if (!isFutureQueriesPaused && requestPayload) {
-      destroy(requestPayload.link, requestPayload.internalDeleteOptions);
+    if (!isFutureMutationsPaused && requestPayload) {
+      destroy(requestPayload.path, requestPayload.options);
       setRequestPayload(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFutureQueriesPaused]);
+  }, [isFutureMutationsPaused]);
 
-  return { destroy, ...query, isLoading: (query.isLoading as boolean) || isFutureQueriesPaused };
+  return {
+    destroy,
+    ...mutation,
+    isLoading: mutation.isPending || isFutureMutationsPaused,
+    // For backward compatibility - mutations don't have initial loading state
+    isInitialLoading: false,
+  };
 };

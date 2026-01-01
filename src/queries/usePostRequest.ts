@@ -5,7 +5,6 @@ import { useEnvironmentVariables, useReactNativeEnv } from '../config';
 import { useStore } from '@tanstack/react-store';
 import { useEffect, useMemo, useState } from 'react';
 import { bootStore } from '../config/bootStore';
-import { scrollToTop } from '../helpers';
 import { useUploadProgress } from '../hooks';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
@@ -25,7 +24,7 @@ export const usePostRequest = <TResponse>({
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { context, headerProvider } = useStore(bootStore);
+  const { headerProvider } = useStore(bootStore);
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -88,17 +87,8 @@ export const usePostRequest = <TResponse>({
     // }
 
     if (postResponse.status) {
-      // scroll to top after success
-
-      if (context !== 'app') {
-        scrollToTop();
-      }
       res(postResponse as IRequestSuccess<TResponse>);
     } else {
-      // scroll to top after error
-      if (context !== 'app') {
-        scrollToTop();
-      }
       rej(postResponse);
     }
   };
