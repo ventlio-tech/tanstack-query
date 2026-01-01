@@ -1,40 +1,61 @@
-import type { InfiniteData, UseQueryOptions } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useEnvironmentVariables } from '../config';
 
 import { useStore } from '@tanstack/react-store';
 import { bootStore } from '../config/bootStore';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
+import { executeMiddlewareChain } from '../request/make-request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
-import type { DefaultRequestOptions, TanstackInfiniteQueryOption } from './queries.interface';
+import type { MiddlewareContext, MiddlewareNext } from '../types';
+import type { DefaultRequestOptions, IPagination } from './queries.interface';
 
-interface Pagination {
-  previous_page: number;
-  current_page: number;
-  next_page: number;
-  size: number;
-  page_count: number;
-  total: number;
+interface UseGetInfiniteRequestOptions<TResponse> extends DefaultRequestOptions {
+  /** The base API path for the request */
+  path: string;
+  /** Whether to automatically load data on mount */
+  load?: boolean;
+  /** Optional key tracker for query key management */
+  keyTracker?: string;
+  /** Configuration for pagination behavior */
+  paginationConfig?: {
+    /** Extract pagination data from response */
+    extractPagination?: (response: IRequestSuccess<TResponse>) => IPagination | undefined;
+    /** Build URL for a specific page */
+    buildPageUrl?: (basePath: string, page: number) => string;
+    /** Query parameter name for page (default: 'page') */
+    pageParamName?: string;
+  };
+  /** Additional query options */
+  queryOptions?: {
+    staleTime?: number;
+    gcTime?: number;
+    refetchOnWindowFocus?: boolean;
+    refetchOnMount?: boolean;
+    retry?: number | boolean;
+  };
 }
 
+/**
+ * Hook for making paginated GET requests with infinite scroll support
+ * Follows TanStack Query v5 patterns for useInfiniteQuery
+ */
 export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   path,
   load = false,
-  queryOptions,
   keyTracker,
   baseUrl,
   headers,
-}: {
-  path: string;
-  load?: boolean;
-  queryOptions?: TanstackInfiniteQueryOption<TResponse & { pagination: Pagination }>;
-  keyTracker?: string;
-} & DefaultRequestOptions) => {
+  paginationConfig,
+  queryOptions,
+}: UseGetInfiniteRequestOptions<TResponse>) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
-  const { headerProvider } = useStore(bootStore);
+  const { middleware, headerProvider } = useStore(bootStore);
   const storeHeaders = useHeaderStore((state) => state.headers);
+  const queryClient = useQueryClient();
+  const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
 
   // Get headers from both the store and the headerProvider (if configured)
   const globalHeaders = useMemo(() => {
@@ -42,162 +63,218 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     return { ...providerHeaders, ...storeHeaders };
   }, [storeHeaders, headerProvider]);
 
-  const [requestPath, setRequestPath] = useState<string>(path);
-  const [options, setOptions] = useState<any>(queryOptions);
+  // Default pagination configuration
+  const pagination = useMemo(
+    () => ({
+      pageParamName: paginationConfig?.pageParamName || 'page',
+      extractPagination:
+        paginationConfig?.extractPagination ||
+        ((response: IRequestSuccess<TResponse>): IPagination | undefined => {
+          if (response.data && 'pagination' in response.data) {
+            return response.data.pagination as IPagination;
+          }
+          return undefined;
+        }),
+      buildPageUrl:
+        paginationConfig?.buildPageUrl ||
+        ((basePath: string, page: number): string => {
+          const [pathname, queryString] = basePath.split('?');
+          const queryParams = new URLSearchParams(queryString || '');
+          queryParams.set(paginationConfig?.pageParamName || 'page', String(page));
+          return pathname + '?' + queryParams.toString();
+        }),
+    }),
+    [paginationConfig]
+  );
 
-  const [requestPayload, setRequestPayload] = useState<Record<any, any>>();
-
-  const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
-
-  let queryClient = useQueryClient();
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  queryClient = useMemo(() => queryClient, []);
-
-  const sendRequest = async (
-    res: (
-      value:
-        | IRequestError
-        | IRequestSuccess<TResponse & { pagination: Pagination }>
-        | PromiseLike<IRequestError | IRequestSuccess<TResponse & { pagination: Pagination }>>
-    ) => void,
-    rej: (reason?: any) => void,
-    pageParam?: string
-  ) => {
-    if (load) {
-      // get request headers
-
+  /**
+   * Core request function that makes the actual HTTP request
+   */
+  const executeRequest = useCallback(
+    async (requestUrl: string): Promise<IRequestSuccess<TResponse>> => {
       const requestOptions = {
-        path: pageParam ?? requestPath,
+        path: requestUrl,
         headers: { ...globalHeaders, ...headers },
         baseURL: baseUrl ?? API_URL,
         timeout: TIMEOUT,
       };
 
-      // let getResponse: IRequestError | IRequestSuccess<TResponse>;
-      // if (middleware) {
-      //   // perform global middleware
-      //   getResponse = await middleware(
-      //     async (middlewareOptions) =>
-      //       await makeRequest<TResponse>(
-      //         middlewareOptions ? { ...requestOptions, ...middlewareOptions } : requestOptions
-      //       ),
-      //     {
-      //       path,
-      //       baseUrl: baseUrl ?? API_URL,
-      //     }
-      //   );
-      // } else {
-      const getResponse = await makeRequest<TResponse>(requestOptions);
-      // }
+      // Create the final handler that makes the actual request
+      const finalHandler: MiddlewareNext<TResponse> = async (options) => {
+        const finalOptions = options ? { ...requestOptions, ...options } : requestOptions;
+        return await makeRequest<TResponse>(finalOptions);
+      };
 
-      if (getResponse.status) {
-        res(getResponse as IRequestSuccess<TResponse & { pagination: Pagination }>);
+      let response: IRequestError | IRequestSuccess<TResponse>;
+
+      // If middleware is available, execute the middleware chain
+      if (middleware && Array.isArray(middleware) && middleware.length > 0) {
+        const context: MiddlewareContext<TResponse> = {
+          baseUrl: baseUrl ?? API_URL,
+          path: requestUrl,
+          options: requestOptions,
+        };
+
+        response = await executeMiddlewareChain<TResponse>(middleware, context, finalHandler);
       } else {
-        rej(getResponse);
+        response = await makeRequest<TResponse>(requestOptions);
       }
-    } else {
-      rej(null);
-    }
-  };
+
+      if (response.status) {
+        return response as IRequestSuccess<TResponse>;
+      } else {
+        throw response;
+      }
+    },
+    [globalHeaders, headers, baseUrl, API_URL, TIMEOUT, middleware]
+  );
 
   /**
-   *
-   * This pagination implementation is currently tied to our use case
+   * Get the next page number from the response
+   * Returns undefined if there are no more pages
    */
-  const constructPaginationLink = (
-    direction: 'next_page' | 'previous_page',
-    lastPage: IRequestSuccess<
-      TResponse & {
-        pagination: Pagination;
+  const getNextPageParam = useCallback(
+    (lastPage: IRequestSuccess<TResponse>): number | undefined => {
+      const paginationData = pagination.extractPagination(lastPage);
+      if (!paginationData) return undefined;
+
+      // No more pages if next_page equals current_page or we're on the last page
+      if (
+        paginationData.next_page === paginationData.current_page ||
+        paginationData.current_page >= paginationData.page_count
+      ) {
+        return undefined;
       }
-    >
-  ) => {
-    const [pathname, queryString] = requestPath.split('?');
 
-    const queryParams = new URLSearchParams(queryString);
-    const lastPageItem = lastPage.data.pagination[direction];
+      return paginationData.next_page;
+    },
+    [pagination]
+  );
 
-    queryParams.set('page', String(lastPageItem));
+  /**
+   * Get the previous page number from the response
+   * Returns undefined if there are no previous pages
+   */
+  const getPreviousPageParam = useCallback(
+    (firstPage: IRequestSuccess<TResponse>): number | undefined => {
+      const paginationData = pagination.extractPagination(firstPage);
+      if (!paginationData) return undefined;
 
-    return pathname + '?' + queryParams.toString();
-  };
+      // No previous pages if we're on page 1 or previous equals current
+      if (paginationData.previous_page === paginationData.current_page || paginationData.current_page <= 1) {
+        return undefined;
+      }
 
-  const query = useInfiniteQuery<any, any, InfiniteData<IRequestSuccess<TResponse & { pagination: Pagination }>>>({
-    queryKey: [requestPath, {}],
-    queryFn: ({ pageParam = requestPath }) =>
-      new Promise<IRequestSuccess<TResponse & { pagination: Pagination }> | IRequestError>((res, rej) =>
-        sendRequest(res, rej, pageParam as string)
-      ),
-    enabled: load && !isFutureQueriesPaused,
-    getNextPageParam: (lastPage) => constructPaginationLink('next_page', lastPage),
-    getPreviousPageParam: (lastPage) => constructPaginationLink('previous_page', lastPage),
-    ...options,
+      return paginationData.previous_page;
+    },
+    [pagination]
+  );
+
+  // The infinite query
+  const query = useInfiniteQuery<
+    IRequestSuccess<TResponse>,
+    IRequestError,
+    InfiniteData<IRequestSuccess<TResponse>>,
+    readonly [string, object],
+    number
+  >({
+    queryKey: [path, {}] as const,
+    queryFn: async ({ pageParam }) => {
+      const requestUrl = pageParam === 1 ? path : pagination.buildPageUrl(path, pageParam);
+      return executeRequest(requestUrl);
+    },
+    initialPageParam: 1,
+    getNextPageParam,
+    getPreviousPageParam,
+    enabled: load === true && !isFutureQueriesPaused,
+    ...queryOptions,
   });
 
-  const setOptionsAsync = async (fetchOptions: any) => {
-    startTransition(() => {
-      setOptions(fetchOptions);
-    });
-  };
-
-  const get = async (
-    link: string,
-    fetchOptions?: UseQueryOptions<
-      IRequestSuccess<TResponse | undefined>,
-      IRequestError,
-      IRequestSuccess<TResponse | undefined>,
-      Array<any>
-    >
-  ): Promise<
-    | InfiniteData<
-        IRequestSuccess<
-          TResponse & {
-            pagination: Pagination;
-          }
-        >
-      >
-    | undefined
-  > => {
-    if (!isFutureQueriesPaused) {
-      await setOptionsAsync(fetchOptions);
-      await updatedPathAsync(link);
-
-      return query.data;
-    } else {
-      setRequestPayload({ link, fetchOptions });
-      return undefined;
-    }
-  };
-
-  useEffect(() => {
-    if (!isFutureQueriesPaused && requestPayload) {
-      get(requestPayload.link, requestPayload.fetchOptions);
-      setRequestPayload(undefined);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFutureQueriesPaused]);
-
-  const updatedPathAsync = async (link: string) => {
-    startTransition(() => {
-      setRequestPath(link);
-    });
-  };
-
+  // Track query key for external reference
   useEffect(() => {
     if (keyTracker) {
-      // set expiration time for the tracker
       queryClient.setQueryDefaults([keyTracker], {
         staleTime: Infinity,
       });
-
-      queryClient.setQueryData([keyTracker], [requestPath, {}]);
+      queryClient.setQueryData([keyTracker], [path, {}]);
     }
-  }, [keyTracker, requestPath, queryClient, queryOptions?.staleTime]);
+  }, [keyTracker, path, queryClient]);
+
+  /**
+   * Fetch next page of data
+   */
+  const fetchNextPage = useCallback(() => {
+    if (query.hasNextPage && !query.isFetchingNextPage) {
+      return query.fetchNextPage();
+    }
+    return Promise.resolve();
+  }, [query]);
+
+  /**
+   * Fetch previous page of data
+   */
+  const fetchPreviousPage = useCallback(() => {
+    if (query.hasPreviousPage && !query.isFetchingPreviousPage) {
+      return query.fetchPreviousPage();
+    }
+    return Promise.resolve();
+  }, [query]);
+
+  /**
+   * Refetch all pages
+   */
+  const refetch = useCallback(() => {
+    return query.refetch();
+  }, [query]);
+
+  /**
+   * Get all items from all pages flattened into a single array
+   */
+  const getAllItems = useCallback(
+    <TItem>(itemExtractor: (page: IRequestSuccess<TResponse>) => TItem[]): TItem[] => {
+      if (!query.data?.pages) return [];
+      return query.data.pages.flatMap(itemExtractor);
+    },
+    [query.data?.pages]
+  );
+
+  /**
+   * Get pagination data from the last fetched page
+   */
+  const getLatestPaginationData = useCallback((): IPagination | undefined => {
+    if (!query.data?.pages?.length) return undefined;
+    const lastPage = query.data.pages[query.data.pages.length - 1];
+    if (!lastPage) return undefined;
+    return pagination.extractPagination(lastPage);
+  }, [query.data?.pages, pagination]);
 
   return {
-    get,
-    ...query,
-    isLoading: (query.isLoading as boolean) || isFutureQueriesPaused,
+    // Query state
+    data: query.data,
+    error: query.error,
+    isLoading: query.isLoading || isFutureQueriesPaused,
+    isError: query.isError,
+    isSuccess: query.isSuccess,
+    isFetching: query.isFetching,
+    isFetchingNextPage: query.isFetchingNextPage,
+    isFetchingPreviousPage: query.isFetchingPreviousPage,
+    isRefetching: query.isRefetching,
+
+    // Pagination state
+    hasNextPage: query.hasNextPage,
+    hasPreviousPage: query.hasPreviousPage,
+
+    // Actions
+    fetchNextPage,
+    fetchPreviousPage,
+    refetch,
+
+    // Utilities
+    getAllItems,
+    getLatestPaginationData,
+    queryKey: [path, {}] as const,
+
+    // Raw query for advanced usage
+    query,
   };
 };
