@@ -227,10 +227,12 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   /**
    * Imperative GET request - fetches data from a dynamic URL
-   * Uses queryClient.fetchQuery for proper caching and deduplication
+   * Uses queryClient.fetchQuery for proper caching and deduplication.
+   * By default, also updates the component's subscription to show the new data.
    *
    * @param url - The URL to fetch from
-   * @param fetchOptions - Optional query options (staleTime, gcTime, etc.)
+   * @param fetchOptions - Optional query options (staleTime, gcTime, updateSubscription)
+   * @param fetchOptions.updateSubscription - If true (default), updates the component's subscription to the new URL, triggering a re-render with new data. Set to false for prefetching without UI update.
    * @returns Promise resolving to the response data
    */
   const get = useCallback(
@@ -239,23 +241,32 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       fetchOptions?: {
         staleTime?: number;
         gcTime?: number;
+        /** If true (default), updates the component's subscription to show the new data. Set to false for prefetching. */
+        updateSubscription?: boolean;
       }
     ): Promise<IRequestSuccess<TResponse>> => {
       if (isFutureQueriesPaused) {
         throw new Error('Queries are currently paused');
       }
 
+      const { staleTime, gcTime, updateSubscription = true } = fetchOptions ?? {};
+
+      // Update the subscription so the component re-renders with the new data
+      if (updateSubscription) {
+        setRequestPath(url);
+      }
+
       // Use fetchQuery for imperative fetching - this properly handles caching
       const result = await queryClient.fetchQuery({
         queryKey: [url, {}] as const,
         queryFn: () => executeRequest(url),
-        staleTime: fetchOptions?.staleTime,
-        gcTime: fetchOptions?.gcTime,
+        staleTime,
+        gcTime,
       });
 
       return result;
     },
-    [queryClient, executeRequest, isFutureQueriesPaused]
+    [queryClient, executeRequest, isFutureQueriesPaused, setRequestPath]
   );
 
   /**
