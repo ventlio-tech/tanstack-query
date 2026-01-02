@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
 
 import { useStore } from '@tanstack/react-store';
@@ -34,6 +34,9 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 } & DefaultRequestOptions) => {
   const [requestPath, setRequestPath] = useState<string>(path);
   const [page, setPage] = useState<number>(1);
+
+  // Track when requestPath was intentionally changed via get() to prevent sync effect from resetting it
+  const isIntentionalPathChangeRef = useRef(false);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { middleware, pagination: globalPaginationConfig, headerProvider } = useStore(bootStore);
@@ -116,8 +119,14 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     ...queryOptions,
   });
 
-  // Update request path when prop changes
+  // Update request path when prop changes (but not when intentionally changed via get())
   useEffect(() => {
+    // Skip if the path change was intentional (from get() call)
+    if (isIntentionalPathChangeRef.current) {
+      isIntentionalPathChangeRef.current = false;
+      return;
+    }
+
     if (path && path !== requestPath) {
       setRequestPath(path);
     }
@@ -253,6 +262,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
       // Update the subscription so the component re-renders with the new data
       if (updateSubscription) {
+        // Mark this as an intentional change to prevent sync effect from resetting it
+        isIntentionalPathChangeRef.current = true;
         setRequestPath(url);
       }
 
