@@ -39,3 +39,5 @@ next-env.d.ts
 
 # Env
 .env
+
+scripts/push-mirror

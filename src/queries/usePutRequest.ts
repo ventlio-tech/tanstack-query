@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
 import { bootStore } from '../config/bootStore';
 import { useUploadProgress } from '../hooks';
+import { usePowerSyncMutation } from '../powersync/usePowerSyncMutation';
+import { usePowerSyncStore } from '../powersync/powersync-store';
 import { HttpMethod, makeRequest } from '../request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
@@ -14,6 +16,21 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
   const { headerProvider } = useStore(bootStore);
+
+  // PowerSync mutation resolution
+  const psStore = usePowerSyncStore();
+  const psMapping = useMemo(() => {
+    if (psStore.mode !== 'powersync' || !psStore.config) return null;
+    return psStore.config.collections.resolve(path);
+  }, [psStore.mode, psStore.config, path]);
+
+  const isPowerSyncActive = psStore.mode === 'powersync' && psMapping !== null;
+
+  const psMutation = usePowerSyncMutation<TResponse>({
+    mapping: psMapping,
+    path,
+    operation: 'update',
+  });
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -90,6 +107,18 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureMutationsPaused]);
+
+  if (isPowerSyncActive) {
+    const psPut = async (data?: any): Promise<IRequestSuccess<TResponse> | undefined> => {
+      return psMutation.mutate(data);
+    };
+    return {
+      put: psPut,
+      uploadProgressPercent: 0,
+      ...psMutation,
+      isLoading: psMutation.isLoading,
+    };
+  }
 
   return { put, uploadProgressPercent, ...mutation, isLoading: mutation.isPending || isFutureMutationsPaused };
 };

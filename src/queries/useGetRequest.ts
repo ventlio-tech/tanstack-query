@@ -4,6 +4,8 @@ import { useEnvironmentVariables } from '../config';
 
 import { useStore } from '@tanstack/react-store';
 import { bootStore } from '../config/bootStore';
+import { usePowerSyncStore } from '../powersync/powersync-store';
+import { usePowerSyncQuery } from '../powersync/usePowerSyncQuery';
 import { IRequestError, IRequestSuccess, makeRequest } from '../request';
 import { executeMiddlewareChain } from '../request/make-request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
@@ -11,7 +13,9 @@ import type { MiddlewareContext, MiddlewareNext } from '../types';
 import { DefaultRequestOptions, IPagination, TanstackQueryOption } from './queries.interface';
 
 /**
- * Hook for making GET requests with pagination support
+ * Hook for making GET requests with pagination support.
+ * When PowerSync mode is active and a collection mapping exists for the path,
+ * data is resolved from the local TanStack DB collection instead of HTTP.
  */
 export const useGetRequest = <TResponse extends Record<string, any>>({
   path,
@@ -40,6 +44,22 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { middleware, pagination: globalPaginationConfig, headerProvider } = useStore(bootStore);
+
+  // PowerSync resolution — always called (rules of hooks) but only active when mode is 'powersync'
+  const psStore = usePowerSyncStore();
+  const psMapping = useMemo(() => {
+    if (psStore.mode !== 'powersync' || !psStore.config) return null;
+    return psStore.config.collections.resolve(requestPath);
+  }, [psStore.mode, psStore.config, requestPath]);
+
+  const isPowerSyncActive = psStore.mode === 'powersync' && psMapping !== null;
+
+  const powerSyncResult = usePowerSyncQuery<TResponse>({
+    mapping: psMapping,
+    path: requestPath,
+    load,
+    enabled: isPowerSyncActive,
+  });
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -107,15 +127,14 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     [globalHeaders, headers, baseUrl, API_URL, TIMEOUT, middleware]
   );
 
-  // The declarative query - only runs when load is true
+  // The declarative query - only runs when load is true AND PowerSync is NOT handling this path
   const query = useQuery({
     queryKey: [requestPath, {}] as const,
     queryFn: async ({ queryKey }) => {
       const [url] = queryKey;
       return executeRequest(url);
     },
-    // Only enable when load is explicitly true AND queries aren't paused
-    enabled: load === true && !isFutureQueriesPaused,
+    enabled: load === true && !isFutureQueriesPaused && !isPowerSyncActive,
     ...queryOptions,
   });
 
@@ -241,7 +260,9 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
    *
    * @param url - The URL to fetch from
    * @param fetchOptions - Optional query options (staleTime, gcTime, updateSubscription)
-   * @param fetchOptions.updateSubscription - If true (default), updates the component's subscription to the new URL, triggering a re-render with new data. Set to false for prefetching without UI update.
+   * @param fetchOptions.updateSubscription - If true (default), updates the
+   * component's subscription to the new URL, triggering a re-render with new data.
+   * Set to false for prefetching without UI update.
    * @returns Promise resolving to the response data
    */
   const get = useCallback(
@@ -250,7 +271,8 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
       fetchOptions?: {
         staleTime?: number;
         gcTime?: number;
-        /** If true (default), updates the component's subscription to show the new data. Set to false for prefetching. */
+        /** If true (default), updates the component's subscription to show the
+         * new data. Set to false for prefetching. */
         updateSubscription?: boolean;
       }
     ): Promise<IRequestSuccess<TResponse>> => {
@@ -286,6 +308,11 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
   const refetch = useCallback(() => {
     return query.refetch();
   }, [query]);
+
+  // When PowerSync mode is active with a valid mapping, return PowerSync results
+  if (isPowerSyncActive) {
+    return powerSyncResult as any;
+  }
 
   return {
     ...query,

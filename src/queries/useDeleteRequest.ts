@@ -4,6 +4,7 @@ import { useStore } from '@tanstack/react-store';
 import { useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
 import { bootStore } from '../config/bootStore';
+import { usePowerSyncStore } from '../powersync/powersync-store';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
@@ -18,6 +19,10 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
   const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
 
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
+
+  // PowerSync mutation resolution — uses an empty path since delete paths are dynamic
+  const psStore = usePowerSyncStore();
+  const isPowerSyncMode = psStore.mode === 'powersync' && psStore.config !== null;
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -76,11 +81,43 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureMutationsPaused]);
 
+  if (isPowerSyncMode) {
+    const psDestroy = async (deletePath: string): Promise<IRequestSuccess<TResponse> | undefined> => {
+      const mapping = psStore.config?.collections.resolve(deletePath);
+      if (!mapping) return undefined;
+      const { usePowerSyncMutation: _ } = await import('../powersync/usePowerSyncMutation');
+      const { parseApiPath } = await import('../powersync/powersync-resolver');
+      const { filters } = parseApiPath(deletePath);
+      const id = filters.id;
+      if (!id) throw new Error('Delete requires an ID in the path');
+
+      const collection = mapping.collection as any;
+      if (collection && typeof collection.delete === 'function') {
+        await collection.delete({ id });
+      }
+
+      return {
+        status: true,
+        statusCode: 200,
+        message: 'Deleted from local database',
+        timeStamp: new Date(),
+        data: { id } as TResponse,
+      };
+    };
+
+    return {
+      destroy: psDestroy,
+      ...mutation,
+      isLoading: false,
+      isInitialLoading: false,
+      isFetching: false,
+    };
+  }
+
   return {
     destroy,
     ...mutation,
     isLoading: mutation.isPending || isFutureMutationsPaused,
-    // For backward compatibility - mutations don't have initial loading state
     isInitialLoading: false,
     //@deprecated
     isFetching: mutation.isPending,

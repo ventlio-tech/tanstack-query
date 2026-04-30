@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import 'url-search-params-polyfill';
 import type { IPagination } from '../queries';
+import { bootstrapPowerSync } from '../powersync/bootstrapPowerSync';
 import type { BootstrapConfig, LegacyMiddlewareFunction, MiddlewareFunction } from '../types';
 import { bootStore } from './bootStore';
 
@@ -49,6 +50,11 @@ export const bootstrapQueryRequest = async (queryClient: QueryClient, options: B
 
     // Replace with array containing the adapted middleware
     options.middleware = [adaptedMiddleware];
+  }
+
+  // Initialize PowerSync if configured
+  if (options.powersync) {
+    bootstrapPowerSync(options.powersync);
   }
 
   // Store the configuration

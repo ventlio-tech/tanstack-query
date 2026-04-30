@@ -1,5 +1,6 @@
 import type { AxiosProgressEvent, RawAxiosRequestHeaders } from 'axios';
 import type { IPagination } from '../queries';
+import type { PowerSyncConfig } from '../powersync/powersync.interface';
 import type { AppFileConfig, HttpMethod, IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 
 // Enhanced middleware types
@@ -53,6 +54,12 @@ export interface BootstrapConfig {
    * ```
    */
   headerProvider?: () => QueryHeaders;
+  /**
+   * Optional PowerSync configuration for offline-first data fetching.
+   * When provided, hooks will transparently resolve data from TanStack DB
+   * collections backed by PowerSync instead of making HTTP requests.
+   */
+  powersync?: PowerSyncConfig;
 }
 
 export interface PaginationConfig {

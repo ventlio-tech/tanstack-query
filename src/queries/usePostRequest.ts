@@ -6,6 +6,8 @@ import { useStore } from '@tanstack/react-store';
 import { useEffect, useMemo, useState } from 'react';
 import { bootStore } from '../config/bootStore';
 import { useUploadProgress } from '../hooks';
+import { usePowerSyncMutation } from '../powersync/usePowerSyncMutation';
+import { usePowerSyncStore } from '../powersync/powersync-store';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
@@ -25,6 +27,21 @@ export const usePostRequest = <TResponse>({
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
   const { headerProvider } = useStore(bootStore);
+
+  // PowerSync mutation resolution
+  const psStore = usePowerSyncStore();
+  const psMapping = useMemo(() => {
+    if (psStore.mode !== 'powersync' || !psStore.config) return null;
+    return psStore.config.collections.resolve(path);
+  }, [psStore.mode, psStore.config, path]);
+
+  const isPowerSyncActive = psStore.mode === 'powersync' && psMapping !== null;
+
+  const psMutation = usePowerSyncMutation<TResponse>({
+    mapping: psMapping,
+    path,
+    operation: 'insert',
+  });
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -133,6 +150,18 @@ export const usePostRequest = <TResponse>({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureMutationsPaused]);
+
+  if (isPowerSyncActive) {
+    const psPost = async (data?: any): Promise<IRequestSuccess<TResponse> | undefined> => {
+      return psMutation.mutate(data);
+    };
+    return {
+      post: psPost,
+      uploadProgressPercent: 0,
+      ...psMutation,
+      isLoading: psMutation.isLoading,
+    };
+  }
 
   return { post, uploadProgressPercent, ...mutation, isLoading: mutation.isPending || isFutureMutationsPaused };
 };
