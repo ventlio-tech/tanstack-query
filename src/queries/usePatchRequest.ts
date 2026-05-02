@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useEnvironmentVariables } from '../config';
 import { bootStore } from '../config/bootStore';
 import { useUploadProgress } from '../hooks';
-import { usePowerSyncMutation } from '../powersync/usePowerSyncMutation';
-import { usePowerSyncStore } from '../powersync/powersync-store';
 import { HttpMethod, makeRequest } from '../request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
@@ -17,24 +15,8 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
   const { headerProvider } = useStore(bootStore);
 
-  // PowerSync mutation resolution
-  const psStore = usePowerSyncStore();
-  const psMapping = useMemo(() => {
-    if (psStore.mode !== 'powersync' || !psStore.config) return null;
-    return psStore.config.collections.resolve(path);
-  }, [psStore.mode, psStore.config, path]);
-
-  const isPowerSyncActive = psStore.mode === 'powersync' && psMapping !== null;
-
-  const psMutation = usePowerSyncMutation<TResponse>({
-    mapping: psMapping,
-    path,
-    operation: 'update',
-  });
-
   const storeHeaders = useHeaderStore((state) => state.headers);
 
-  // Get headers from both the store and the headerProvider (if configured)
   const globalHeaders = useMemo(() => {
     const providerHeaders = headerProvider ? headerProvider() : undefined;
     return { ...providerHeaders, ...storeHeaders };
@@ -45,8 +27,6 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
   const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
-    // get request headers
-
     const requestOptions = {
       path: path,
       body: data,
@@ -57,25 +37,7 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
       onUploadProgress,
     };
 
-    // let patchResponse: IRequestError | IRequestSuccess<TResponse>;
-    // if (middleware) {
-    //   // perform global middleware
-    //   const middlewareResponse = await middleware(
-    //     async (options) =>
-    //       await makeRequest<TResponse>(
-    //         options ? { ...requestOptions, ...options } : requestOptions
-    //       ),
-    //     {
-    //       path,
-    //       baseUrl: baseUrl ?? API_URL,
-    //       body: data,
-    //     }
-    //   );
-
-    //   patchResponse = middlewareResponse;
-    // } else {
     const patchResponse = await makeRequest<TResponse>(requestOptions);
-    // }
     if (patchResponse.status) {
       res(patchResponse as IRequestSuccess<TResponse>);
     } else {
@@ -83,7 +45,6 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     }
   };
 
-  // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>({
     mutationKey: [path, { type: 'mutation' }],
     mutationFn: (dataData: any) =>
@@ -111,18 +72,6 @@ export const usePatchRequest = <TResponse>({ path, baseUrl, headers }: { path: s
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureMutationsPaused]);
-
-  if (isPowerSyncActive) {
-    const psPatch = async (data?: any): Promise<IRequestSuccess<TResponse> | undefined> => {
-      return psMutation.mutate(data);
-    };
-    return {
-      patch: psPatch,
-      uploadProgressPercent: 0,
-      ...psMutation,
-      isLoading: psMutation.isLoading,
-    };
-  }
 
   return { patch, uploadProgressPercent, ...mutation, isLoading: mutation.isPending || isFutureMutationsPaused };
 };

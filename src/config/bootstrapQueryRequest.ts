@@ -1,7 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import 'url-search-params-polyfill';
 import type { IPagination } from '../queries';
-import { bootstrapPowerSync } from '../powersync/bootstrapPowerSync';
 import type { BootstrapConfig, LegacyMiddlewareFunction, MiddlewareFunction } from '../types';
 import { bootStore } from './bootStore';
 
@@ -12,10 +11,8 @@ import { bootStore } from './bootStore';
  * @param options - Configuration options
  */
 export const bootstrapQueryRequest = async (queryClient: QueryClient, options: BootstrapConfig = {}): Promise<void> => {
-  // Resume any paused mutations
   await queryClient.resumePausedMutations();
 
-  // Set default pagination configuration if not provided
   if (!options.pagination) {
     options.pagination = {
       pageParamName: 'page',
@@ -26,7 +23,6 @@ export const bootstrapQueryRequest = async (queryClient: QueryClient, options: B
         return pathname + '?' + queryParams.toString();
       },
       extractPagination: (response: any) => {
-        // Default pagination extraction from response
         if (response.data && 'pagination' in response.data) {
           return response.data.pagination as IPagination;
         }
@@ -35,11 +31,9 @@ export const bootstrapQueryRequest = async (queryClient: QueryClient, options: B
     };
   }
 
-  // Convert legacy middleware to new format if needed
   if (options.middleware && !Array.isArray(options.middleware)) {
     const legacyMiddleware = options.middleware as LegacyMiddlewareFunction;
 
-    // Create a new middleware function that adapts the legacy format
     const adaptedMiddleware: MiddlewareFunction = async (context, next) => {
       return await legacyMiddleware((opts) => next(opts), {
         baseUrl: context.baseUrl,
@@ -48,15 +42,8 @@ export const bootstrapQueryRequest = async (queryClient: QueryClient, options: B
       });
     };
 
-    // Replace with array containing the adapted middleware
     options.middleware = [adaptedMiddleware];
   }
 
-  // Initialize PowerSync if configured
-  if (options.powersync) {
-    bootstrapPowerSync(options.powersync);
-  }
-
-  // Store the configuration
   bootStore.setState(() => options);
 };

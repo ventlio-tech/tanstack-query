@@ -6,8 +6,6 @@ import { useStore } from '@tanstack/react-store';
 import { useEffect, useMemo, useState } from 'react';
 import { bootStore } from '../config/bootStore';
 import { useUploadProgress } from '../hooks';
-import { usePowerSyncMutation } from '../powersync/usePowerSyncMutation';
-import { usePowerSyncStore } from '../powersync/powersync-store';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
@@ -28,28 +26,10 @@ export const usePostRequest = <TResponse>({
 
   const { headerProvider } = useStore(bootStore);
 
-  // PowerSync mutation resolution
-  const psStore = usePowerSyncStore();
-  const psMapping = useMemo(() => {
-    if (psStore.mode !== 'powersync' || !psStore.config) return null;
-    return psStore.config.collections.resolve(path);
-  }, [psStore.mode, psStore.config, path]);
-
-  const isPowerSyncActive = psStore.mode === 'powersync' && psMapping !== null;
-
-  const psMutation = usePowerSyncMutation<TResponse>({
-    mapping: psMapping,
-    path,
-    operation: 'insert',
-  });
-
   const storeHeaders = useHeaderStore((state) => state.headers);
 
-  // Get headers from both the store and the headerProvider (if configured)
-  // headerProvider allows reading from cookies/localStorage synchronously
   const globalHeaders = useMemo(() => {
     const providerHeaders = headerProvider ? headerProvider() : undefined;
-    // Merge: store headers take precedence over provider headers
     return { ...providerHeaders, ...storeHeaders };
   }, [storeHeaders, headerProvider]);
   const { isApp } = useReactNativeEnv();
@@ -63,8 +43,6 @@ export const usePostRequest = <TResponse>({
     rej: (reason?: any) => void,
     postData: { data: any; requestConfig?: Partial<IMakeRequest> }
   ) => {
-    // get request headers
-
     const { data, requestConfig } = postData;
 
     delete requestConfig?.body;
@@ -85,23 +63,7 @@ export const usePostRequest = <TResponse>({
       ...requestConfig,
     };
 
-    // let postResponse: IRequestError | IRequestSuccess<TResponse>;
-    // if (middleware) {
-    //   // perform global middleware
-    //   postResponse = await middleware(
-    //     async (options) =>
-    //       await makeRequest<TResponse>(
-    //         options ? { ...requestOptions, ...options } : requestOptions
-    //       ),
-    //     {
-    //       path,
-    //       baseUrl: baseUrl ?? API_URL,
-    //       body: data,
-    //     }
-    //   );
-    // } else {
     const postResponse = await makeRequest<TResponse>(requestOptions);
-    // }
 
     if (postResponse.status) {
       res(postResponse as IRequestSuccess<TResponse>);
@@ -110,7 +72,6 @@ export const usePostRequest = <TResponse>({
     }
   };
 
-  // register post mutation
   const mutation = useMutation<
     IRequestSuccess<TResponse>,
     IRequestError,
@@ -150,18 +111,6 @@ export const usePostRequest = <TResponse>({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFutureMutationsPaused]);
-
-  if (isPowerSyncActive) {
-    const psPost = async (data?: any): Promise<IRequestSuccess<TResponse> | undefined> => {
-      return psMutation.mutate(data);
-    };
-    return {
-      post: psPost,
-      uploadProgressPercent: 0,
-      ...psMutation,
-      isLoading: psMutation.isLoading,
-    };
-  }
 
   return { post, uploadProgressPercent, ...mutation, isLoading: mutation.isPending || isFutureMutationsPaused };
 };
