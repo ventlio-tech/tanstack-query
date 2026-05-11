@@ -218,6 +218,10 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
         updateSubscription?: boolean;
       }
     ): Promise<IRequestSuccess<TResponse>> => {
+      if (isLocalMode) {
+        return {} as IRequestSuccess<TResponse>;
+      }
+
       if (isFutureQueriesPaused) {
         throw new Error('Queries are currently paused');
       }
@@ -238,7 +242,7 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
 
       return result;
     },
-    [queryClient, executeRequest, isFutureQueriesPaused, setRequestPath]
+    [queryClient, executeRequest, isFutureQueriesPaused, setRequestPath, isLocalMode]
   );
 
   const refetch = useCallback(() => {
