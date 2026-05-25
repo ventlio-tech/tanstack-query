@@ -6,13 +6,15 @@ import { useEnvironmentVariables } from '../config';
 import { bootStore } from '../config/bootStore';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
+import { executeMiddlewareChain } from '../request/make-request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
+import type { MiddlewareContext, MiddlewareNext } from '../types';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOptions) => {
   const { baseUrl, headers } = deleteOptions ?? {};
 
-  const { headerProvider } = useStore(bootStore);
+  const { middleware, headerProvider } = useStore(bootStore);
   const [requestPayload, setRequestPayload] = useState<{ path: string; options?: any }>();
 
   const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
@@ -35,7 +37,25 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
       timeout: TIMEOUT,
     };
 
-    const deleteResponse = await makeRequest<TResponse>(requestOptions);
+    const finalHandler: MiddlewareNext<TResponse> = async (options) => {
+      const finalOptions = options ? { ...requestOptions, ...options } : requestOptions;
+      return await makeRequest<TResponse>(finalOptions);
+    };
+
+    let deleteResponse: IRequestError | IRequestSuccess<TResponse>;
+
+    if (middleware && Array.isArray(middleware) && middleware.length > 0) {
+      const context: MiddlewareContext<TResponse> = {
+        baseUrl: baseUrl ?? API_URL,
+        path,
+        method: HttpMethod.DELETE,
+        headers: requestOptions.headers,
+        options: requestOptions,
+      };
+      deleteResponse = await executeMiddlewareChain<TResponse>(middleware, context, finalHandler);
+    } else {
+      deleteResponse = await makeRequest<TResponse>(requestOptions);
+    }
 
     if (deleteResponse.status) {
       return deleteResponse as IRequestSuccess<TResponse>;

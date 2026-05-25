@@ -6,14 +6,16 @@ import { useEnvironmentVariables } from '../config';
 import { bootStore } from '../config/bootStore';
 import { useUploadProgress } from '../hooks';
 import { HttpMethod, makeRequest } from '../request';
+import { executeMiddlewareChain } from '../request/make-request';
 import type { IRequestError, IRequestSuccess } from '../request/request.interface';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
+import type { MiddlewareContext, MiddlewareNext } from '../types';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: string } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
   const { uploadProgressPercent, onUploadProgress } = useUploadProgress();
-  const { headerProvider } = useStore(bootStore);
+  const { middleware, headerProvider } = useStore(bootStore);
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -37,7 +39,27 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
       onUploadProgress,
     };
 
-    const putResponse = await makeRequest<TResponse>(requestOptions);
+    const finalHandler: MiddlewareNext<TResponse> = async (options) => {
+      const finalOptions = options ? { ...requestOptions, ...options } : requestOptions;
+      return await makeRequest<TResponse>(finalOptions);
+    };
+
+    let putResponse: IRequestError | IRequestSuccess<TResponse>;
+
+    if (middleware && Array.isArray(middleware) && middleware.length > 0) {
+      const context: MiddlewareContext<TResponse> = {
+        baseUrl: baseUrl ?? API_URL,
+        path,
+        body: data,
+        method: HttpMethod.PUT,
+        headers: requestOptions.headers,
+        options: requestOptions,
+      };
+      putResponse = await executeMiddlewareChain<TResponse>(middleware, context, finalHandler);
+    } else {
+      putResponse = await makeRequest<TResponse>(requestOptions);
+    }
+
     if (putResponse.status) {
       res(putResponse as IRequestSuccess<TResponse>);
     } else {

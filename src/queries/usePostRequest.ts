@@ -8,7 +8,9 @@ import { bootStore } from '../config/bootStore';
 import { useUploadProgress } from '../hooks';
 import type { IMakeRequest, IRequestError, IRequestSuccess } from '../request';
 import { HttpMethod, makeRequest } from '../request';
+import { executeMiddlewareChain } from '../request/make-request';
 import { useHeaderStore, usePauseFutureRequests } from '../stores';
+import type { MiddlewareContext, MiddlewareNext } from '../types';
 import type { DefaultRequestOptions } from './queries.interface';
 
 export const usePostRequest = <TResponse>({
@@ -24,7 +26,7 @@ export const usePostRequest = <TResponse>({
 } & DefaultRequestOptions) => {
   const { API_URL, TIMEOUT } = useEnvironmentVariables();
 
-  const { headerProvider } = useStore(bootStore);
+  const { middleware, headerProvider } = useStore(bootStore);
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
@@ -63,7 +65,26 @@ export const usePostRequest = <TResponse>({
       ...requestConfig,
     };
 
-    const postResponse = await makeRequest<TResponse>(requestOptions);
+    const finalHandler: MiddlewareNext<TResponse> = async (options) => {
+      const finalOptions = options ? { ...requestOptions, ...options } : requestOptions;
+      return await makeRequest<TResponse>(finalOptions);
+    };
+
+    let postResponse: IRequestError | IRequestSuccess<TResponse>;
+
+    if (middleware && Array.isArray(middleware) && middleware.length > 0) {
+      const context: MiddlewareContext<TResponse> = {
+        baseUrl: baseUrl ?? API_URL,
+        path,
+        body: data,
+        method: HttpMethod.POST,
+        headers: requestOptions.headers,
+        options: requestOptions,
+      };
+      postResponse = await executeMiddlewareChain<TResponse>(middleware, context, finalHandler);
+    } else {
+      postResponse = await makeRequest<TResponse>(requestOptions);
+    }
 
     if (postResponse.status) {
       res(postResponse as IRequestSuccess<TResponse>);
