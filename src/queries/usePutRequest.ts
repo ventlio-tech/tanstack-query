@@ -17,7 +17,6 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
-  // Get headers from both the store and the headerProvider (if configured)
   const globalHeaders = useMemo(() => {
     const providerHeaders = headerProvider ? headerProvider() : undefined;
     return { ...providerHeaders, ...storeHeaders };
@@ -28,8 +27,6 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
   const isFutureMutationsPaused = usePauseFutureRequests((state) => state.isFutureMutationsPaused);
 
   const sendRequest = async (res: (value: any) => void, rej: (reason?: any) => void, data: any) => {
-    // get request headers
-
     const requestOptions = {
       path: path,
       body: data,
@@ -40,21 +37,7 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
       onUploadProgress,
     };
 
-    // let putResponse: IRequestError | IRequestSuccess<TResponse>;
-    // if (middleware) {
-    //   // perform global middleware
-    //   putResponse = await middleware(
-    //     async (options) =>
-    //       await makeRequest<TResponse>(options ? { ...requestOptions, ...options } : requestOptions),
-    //     {
-    //       path,
-    //       baseUrl: baseUrl ?? API_URL,
-    //       body: data,
-    //     }
-    //   );
-    // } else {
     const putResponse = await makeRequest<TResponse>(requestOptions);
-    // }
     if (putResponse.status) {
       res(putResponse as IRequestSuccess<TResponse>);
     } else {
@@ -62,7 +45,6 @@ export const usePutRequest = <TResponse>({ path, baseUrl, headers }: { path: str
     }
   };
 
-  // register post mutation
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError>({
     mutationKey: [path, { type: 'mutation' }],
     mutationFn: (dataData: any) =>

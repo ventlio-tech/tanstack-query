@@ -21,7 +21,6 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
-  // Get headers from both the store and the headerProvider (if configured)
   const globalHeaders = useMemo(() => {
     const providerHeaders = headerProvider ? headerProvider() : undefined;
     return { ...providerHeaders, ...storeHeaders };
@@ -45,16 +44,10 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     }
   };
 
-  // Use mutation instead of query for DELETE operations
   const mutation = useMutation<IRequestSuccess<TResponse>, IRequestError, { path: string }>({
     mutationFn: async ({ path }) => sendRequest(path),
   });
 
-  /**
-   * Perform a DELETE request to the specified path
-   * @param path - The API path to send the DELETE request to
-   * @param options - Optional mutation options (onSuccess, onError, etc.)
-   */
   const destroy = async (
     path: string,
     options?: MutateOptions<IRequestSuccess<TResponse>, IRequestError, { path: string }, unknown>
@@ -67,7 +60,6 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     }
   };
 
-  // Resume paused requests when mutations are unpaused
   useEffect(() => {
     if (!isFutureMutationsPaused && requestPayload) {
       destroy(requestPayload.path, requestPayload.options);
@@ -80,7 +72,6 @@ export const useDeleteRequest = <TResponse>(deleteOptions?: DefaultRequestOption
     destroy,
     ...mutation,
     isLoading: mutation.isPending || isFutureMutationsPaused,
-    // For backward compatibility - mutations don't have initial loading state
     isInitialLoading: false,
     //@deprecated
     isFetching: mutation.isPending,

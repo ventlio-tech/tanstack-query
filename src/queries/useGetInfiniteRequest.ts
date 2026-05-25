@@ -5,6 +5,7 @@ import { useEnvironmentVariables } from '../config';
 
 import { useStore } from '@tanstack/react-store';
 import { bootStore } from '../config/bootStore';
+import { useDataSourceStore } from '../datasource/datasource-store';
 import type { IRequestError, IRequestSuccess } from '../request';
 import { makeRequest } from '../request';
 import { executeMiddlewareChain } from '../request/make-request';
@@ -58,6 +59,8 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
   const storeHeaders = useHeaderStore((state) => state.headers);
   const queryClient = useQueryClient();
   const isFutureQueriesPaused = usePauseFutureRequests((state) => state.isFutureQueriesPaused);
+  const dataSourceMode = useDataSourceStore((s) => s.mode);
+  const isLocalMode = dataSourceMode === 'local';
 
   // Get headers from both the store and the headerProvider (if configured)
   const globalHeaders = useMemo(() => {
@@ -72,7 +75,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       extractPagination:
         paginationConfig?.extractPagination ||
         ((response: IRequestSuccess<TResponse>): IPagination | undefined => {
-          if (response.data && 'pagination' in response.data) {
+          if ((response.data as any) && 'pagination' in response.data) {
             return response.data.pagination as IPagination;
           }
           return undefined;
@@ -184,7 +187,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     readonly [string, object],
     number
   >({
-    queryKey: [path, {}] as const,
+    queryKey: [path, { __type: 'infinite' }] as const,
     queryFn: async ({ pageParam }) => {
       const requestUrl = pageParam === 1 ? path : pagination.buildPageUrl(path, pageParam);
       return executeRequest(requestUrl);
@@ -192,7 +195,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     initialPageParam: 1,
     getNextPageParam,
     getPreviousPageParam,
-    enabled: load === true && !isFutureQueriesPaused,
+    enabled: load === true && !isFutureQueriesPaused && !isLocalMode,
     ...restQueryOptions,
   });
 
@@ -202,7 +205,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
       queryClient.setQueryDefaults([keyTracker], {
         staleTime: Infinity,
       });
-      queryClient.setQueryData([keyTracker], [path, {}]);
+      queryClient.setQueryData([keyTracker], [path, { __type: 'infinite' }]);
     }
   }, [keyTracker, path, queryClient]);
 
@@ -240,12 +243,13 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
    */
   const get = useCallback(
     async (newPath: string) => {
-      // Update the query key and refetch
-      queryClient.invalidateQueries({ queryKey: [path, {}] });
-      // Make a direct request with the new path
+      if (isLocalMode) {
+        return {} as IRequestSuccess<TResponse>;
+      }
+      queryClient.invalidateQueries({ queryKey: [path, { __type: 'infinite' }] });
       return executeRequest(newPath);
     },
-    [queryClient, path, executeRequest]
+    [queryClient, path, executeRequest, isLocalMode]
   );
 
   /**
@@ -263,6 +267,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
    * Get pagination data from the last fetched page
    */
   const getLatestPaginationData = useCallback((): IPagination | undefined => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!query.data?.pages?.length) return undefined;
     const lastPage = query.data.pages[query.data.pages.length - 1];
     if (!lastPage) return undefined;
@@ -297,7 +302,7 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     // Utilities
     getAllItems,
     getLatestPaginationData,
-    queryKey: [path, {}] as const,
+    queryKey: [path, { __type: 'infinite' }] as const,
 
     // Raw query for advanced usage
     query,

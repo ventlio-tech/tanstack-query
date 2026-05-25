@@ -28,11 +28,8 @@ export const usePostRequest = <TResponse>({
 
   const storeHeaders = useHeaderStore((state) => state.headers);
 
-  // Get headers from both the store and the headerProvider (if configured)
-  // headerProvider allows reading from cookies/localStorage synchronously
   const globalHeaders = useMemo(() => {
     const providerHeaders = headerProvider ? headerProvider() : undefined;
-    // Merge: store headers take precedence over provider headers
     return { ...providerHeaders, ...storeHeaders };
   }, [storeHeaders, headerProvider]);
   const { isApp } = useReactNativeEnv();
@@ -46,8 +43,6 @@ export const usePostRequest = <TResponse>({
     rej: (reason?: any) => void,
     postData: { data: any; requestConfig?: Partial<IMakeRequest> }
   ) => {
-    // get request headers
-
     const { data, requestConfig } = postData;
 
     delete requestConfig?.body;
@@ -68,23 +63,7 @@ export const usePostRequest = <TResponse>({
       ...requestConfig,
     };
 
-    // let postResponse: IRequestError | IRequestSuccess<TResponse>;
-    // if (middleware) {
-    //   // perform global middleware
-    //   postResponse = await middleware(
-    //     async (options) =>
-    //       await makeRequest<TResponse>(
-    //         options ? { ...requestOptions, ...options } : requestOptions
-    //       ),
-    //     {
-    //       path,
-    //       baseUrl: baseUrl ?? API_URL,
-    //       body: data,
-    //     }
-    //   );
-    // } else {
     const postResponse = await makeRequest<TResponse>(requestOptions);
-    // }
 
     if (postResponse.status) {
       res(postResponse as IRequestSuccess<TResponse>);
@@ -93,7 +72,6 @@ export const usePostRequest = <TResponse>({
     }
   };
 
-  // register post mutation
   const mutation = useMutation<
     IRequestSuccess<TResponse>,
     IRequestError,
