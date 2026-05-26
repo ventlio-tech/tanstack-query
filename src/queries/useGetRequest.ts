@@ -245,9 +245,12 @@ export const useGetRequest = <TResponse extends Record<string, any>>({
     [queryClient, executeRequest, isFutureQueriesPaused, setRequestPath, isLocalMode]
   );
 
+  const queryRef = useRef(query);
+  queryRef.current = query;
+
   const refetch = useCallback(() => {
-    return query.refetch();
-  }, [query]);
+    return queryRef.current.refetch();
+  }, []);
 
   return {
     ...query,
