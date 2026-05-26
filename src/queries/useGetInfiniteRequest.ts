@@ -1,6 +1,6 @@
 import type { InfiniteData } from '@tanstack/react-query';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useEnvironmentVariables } from '../config';
 
 import { useStore } from '@tanstack/react-store';
@@ -209,32 +209,35 @@ export const useGetInfiniteRequest = <TResponse extends Record<string, any>>({
     }
   }, [keyTracker, path, queryClient]);
 
+  const queryRef = useRef(query);
+  queryRef.current = query;
+
   /**
    * Fetch next page of data
    */
   const fetchNextPage = useCallback(() => {
-    if (query.hasNextPage && !query.isFetchingNextPage) {
-      return query.fetchNextPage();
+    if (queryRef.current.hasNextPage && !queryRef.current.isFetchingNextPage) {
+      return queryRef.current.fetchNextPage();
     }
     return Promise.resolve();
-  }, [query]);
+  }, []);
 
   /**
    * Fetch previous page of data
    */
   const fetchPreviousPage = useCallback(() => {
-    if (query.hasPreviousPage && !query.isFetchingPreviousPage) {
-      return query.fetchPreviousPage();
+    if (queryRef.current.hasPreviousPage && !queryRef.current.isFetchingPreviousPage) {
+      return queryRef.current.fetchPreviousPage();
     }
     return Promise.resolve();
-  }, [query]);
+  }, []);
 
   /**
    * Refetch all pages
    */
   const refetch = useCallback(() => {
-    return query.refetch();
-  }, [query]);
+    return queryRef.current.refetch();
+  }, []);
 
   /**
    * Fetch data with a new URL path (for dynamic filtering)
